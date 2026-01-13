@@ -13,8 +13,8 @@ export function SideBar() {
 
             <nav className="flex flex-col mt-10">
                 <SidebarItem icon={LayoutDashboard} name="Dashboard" url="/"></SidebarItem>
-                <SidebarItem icon={HandCoins} name="Receitas" url="/pages/receitas"></SidebarItem>
-                <SidebarItem icon={BanknoteArrowDown} name="Despesas" url="/pages/despesas"></SidebarItem>
+                <SidebarItem icon={HandCoins} name="Receitas" url="/receitas"></SidebarItem>
+                <SidebarItem icon={BanknoteArrowDown} name="Despesas" url="/despesas"></SidebarItem>
                 {/* <SidebarItem icon={PiggyBank} name="Investimento" url="#"></SidebarItem> */}
             </nav>
 

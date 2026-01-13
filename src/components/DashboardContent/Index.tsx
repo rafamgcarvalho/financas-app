@@ -26,10 +26,10 @@ export function DashboardContent() {
                 </div>
 
                 {/* Card 3: Investimento */}
-                {/* <div className="bg-slate-200 p-5 rounded-lg shadow-xl">
+                <div className="bg-slate-200 p-5 rounded-lg shadow-xl">
                     <p className="text-sm text-slate-600">Investimentos Totais</p>
                     <p className="text-2xl font-semibold text-slate-800">R$ 4.200,00</p>
-                </div> */}
+                </div>
 
                 {/* Card 4: Balanço */}
                 <div className="bg-green-100 p-5 rounded-lg shadow-xl">

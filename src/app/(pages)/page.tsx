@@ -1,4 +1,4 @@
-import { DashboardContent } from "../components/DashboardContent/Index";
+import { DashboardContent } from "../../components/DashboardContent/Index";
 
 
 export default function Home() {
