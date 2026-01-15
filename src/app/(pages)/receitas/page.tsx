@@ -3,7 +3,7 @@
 import { toast } from "react-toastify";
 
 import { Container } from "@/src/components/Container/Index";
-import { IncomeModel } from "@/src/models/IncomeModel";
+import { TransactionModel } from "@/src/models/IncomeModel";
 import { useState } from "react";
 import { api } from "@/src/services/api";
 import { useRouter } from "next/navigation";
@@ -19,31 +19,17 @@ export default function ReceitasPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-//   const [formData, setFormData] = useState<IncomeModel>({
-//     name: "",
-//     description: "",
-//     amount: "",
-//     incomeDate: "",
-//     category: "salario",
-//     recurring: false,
-//   });
+  const initialFormState: TransactionModel = {
+    name: "",
+    description: "",
+    amount: "",
+    transactionDate: "",
+    category: "salario",
+    recurring: false,
+    type: "INCOME",
+  };
 
-    const initialFormState: IncomeModel = {
-        name: "",
-        description: "",
-        amount: "",
-        incomeDate: "",
-        category: "salario",
-        recurring: false,
-    };
-
-    const [formData, setFormData] = useState<IncomeModel>(initialFormState);
-
-  // const [validationErrors, setValidationErrors] = useState<Partial<IncomeModel>>({
-  //     name: "Nome inválido",
-  //     amount: "Valor inválido",
-  //     incomeDate: "Data inválida",
-  // });
+  const [formData, setFormData] = useState<TransactionModel>(initialFormState);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -76,7 +62,7 @@ export default function ReceitasPage() {
     if (!formData.name) errors.push("Nome inválido");
     if (!formData.amount || isNaN(amountNumber) || amountNumber < 0)
       errors.push("Valor inválido");
-    if (!formData.incomeDate) errors.push("Data inválida");
+    if (!formData.transactionDate) errors.push("Data inválida");
 
     if (errors.length > 0) {
       toast.dismiss();
@@ -90,14 +76,13 @@ export default function ReceitasPage() {
       const payload = {
         title: formData.name,
         amount: amountNumber,
-        description: formData.description.trim() === "" ? null : formData.description,
-        date: new Date(formData.incomeDate).toISOString(),
+        description:
+          formData.description.trim() === "" ? null : formData.description,
+        date: new Date(formData.transactionDate).toISOString(),
         category: formData.category,
         type: "INCOME",
         isRecurring: formData.recurring,
       };
-
-      console.log("Enviando dados:", payload);
 
       await api.post("/transactions", payload);
 
@@ -106,7 +91,6 @@ export default function ReceitasPage() {
       setFormData(initialFormState);
 
       setTimeout(() => {
-        // router.push('/');
         router.refresh();
       }, 800);
 
@@ -195,10 +179,10 @@ export default function ReceitasPage() {
               </label>
               <input
                 type="date"
-                id="incomeDate"
-                name="incomeDate"
+                id="transactionDate"
+                name="transactionDate"
                 required
-                value={formData.incomeDate}
+                value={formData.transactionDate}
                 onChange={handleChange}
                 className="w-full border-gray-300 focus:border-[#42B7B2] focus:ring-[#42B7B2] rounded-md shadow-sm p-3 border"
               />
@@ -245,16 +229,15 @@ export default function ReceitasPage() {
           </div>
 
           <div className="pt-4">
-            {/* <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#42B7B2] hover:bg-teal-600 hover:cursor-pointer transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42B7B2]"
-                        > */}
             <button
               type="submit"
-              disabled={loading} // 5. Desabilita o botão
+              disabled={loading}
               className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42B7B2] 
-                        ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-[#42B7B2] hover:bg-teal-600 hover:cursor-pointer"}`}
+                        ${
+                          loading
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-[#42B7B2] hover:bg-teal-600 hover:cursor-pointer"
+                        }`}
             >
               {loading ? "Salvando..." : "Salvar Receita"}
             </button>

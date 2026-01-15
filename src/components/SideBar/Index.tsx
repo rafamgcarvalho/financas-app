@@ -1,6 +1,6 @@
 "use client";
 
-import { BanknoteArrowDown, Goal, HandCoins, LogOut} from "lucide-react";
+import { BanknoteArrowDown, Goal, HandCoins, LogOut, PiggyBank} from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
 import { SidebarItem } from "../SideBarItem/Index";
 
@@ -15,7 +15,7 @@ export function SideBar() {
                 <SidebarItem icon={LayoutDashboard} name="Dashboard" url="/"></SidebarItem>
                 <SidebarItem icon={HandCoins} name="Receitas" url="/receitas"></SidebarItem>
                 <SidebarItem icon={BanknoteArrowDown} name="Despesas" url="/despesas"></SidebarItem>
-                {/* <SidebarItem icon={PiggyBank} name="Investimento" url="#"></SidebarItem> */}
+                <SidebarItem icon={PiggyBank} name="Investimento" url="#"></SidebarItem>
             </nav>
 
             <div className="mt-auto">

@@ -1,8 +1,9 @@
-export type IncomeModel = {
+export type TransactionModel = {
     name: string;
     description: string;
     amount: string;
-    incomeDate: string;
+    transactionDate: string;
     category: string;
     recurring: boolean;
+    type: 'INCOME' | 'EXPENSE';
 }
