@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { toast } from "react-toastify";
@@ -7,6 +8,7 @@ import { TransactionModel } from "@/src/models/IncomeModel";
 import { useState } from "react";
 import { api } from "@/src/services/api";
 import { useRouter } from "next/navigation";
+import { TransactionsList } from "@/src/components/TransactionsList/Index";
 
 const categories = [
   { value: "salario", label: "Salário" },
@@ -18,6 +20,8 @@ const categories = [
 export default function ReceitasPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+   
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const initialFormState: TransactionModel = {
     name: "",
@@ -90,11 +94,12 @@ export default function ReceitasPage() {
 
       setFormData(initialFormState);
 
+      setRefreshKey(prev => prev + 1);
+
       setTimeout(() => {
         router.refresh();
       }, 800);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -243,6 +248,10 @@ export default function ReceitasPage() {
             </button>
           </div>
         </form>
+
+        <hr className="my-10 border-gray-100" />
+
+        <TransactionsList key={refreshKey} type="income" exibirAcoes={true}></TransactionsList>
       </div>
     </Container>
   );

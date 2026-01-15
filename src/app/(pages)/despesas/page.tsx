@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Container } from "@/src/components/Container/Index";
+import { TransactionsList } from "@/src/components/TransactionsList/Index";
 import { TransactionModel } from "@/src/models/IncomeModel";
 import { api } from "@/src/services/api";
 import { useRouter } from "next/navigation";
@@ -20,6 +22,8 @@ const categories = [
 export default function DespesasPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const initialFormState: TransactionModel = {
     name: "",
@@ -92,11 +96,12 @@ export default function DespesasPage() {
 
       setFormData(initialFormState);
 
+      setRefreshKey(prev => prev + 1);
+
       setTimeout(() => {
         router.refresh();
       }, 800);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -247,6 +252,8 @@ export default function DespesasPage() {
             </button>
           </div>
         </form>
+
+        <TransactionsList key={refreshKey} type="expense" exibirAcoes={true}></TransactionsList>
       </div>
     </Container>
   );
