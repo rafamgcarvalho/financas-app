@@ -15,7 +15,7 @@ export function SideBar() {
                 <SidebarItem icon={LayoutDashboard} name="Dashboard" url="/"></SidebarItem>
                 <SidebarItem icon={HandCoins} name="Receitas" url="/receitas"></SidebarItem>
                 <SidebarItem icon={BanknoteArrowDown} name="Despesas" url="/despesas"></SidebarItem>
-                <SidebarItem icon={PiggyBank} name="Investimento" url="#"></SidebarItem>
+                <SidebarItem icon={PiggyBank} name="Investimentos" url="/investimentos"></SidebarItem>
             </nav>
 
             <div className="mt-auto">
