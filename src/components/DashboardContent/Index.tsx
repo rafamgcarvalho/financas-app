@@ -18,7 +18,7 @@ export function DashboardContent() {
         setLoading(true);
         const data = await api.get("/transactions");
 
-        console.log("O que retorna da API: ", data);
+        // console.log("O que retorna da API: ", data);
 
         setTransactions(data);
       } catch (error) {
@@ -40,11 +40,13 @@ export function DashboardContent() {
   }
 
   const totalIncomes = transactions
-    .filter((t) => t.type === "income")
+    .filter((t) => t.type?.toLowerCase() === "income")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
+  // console.log("Total incomes: ", totalIncomes);
+
   const totalExpenses = transactions
-    .filter((t) => t.type === "expense")
+    .filter((t) => t.type?.toLowerCase() === "expense")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
   const balance = totalIncomes - totalExpenses;

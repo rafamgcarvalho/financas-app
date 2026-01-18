@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/src/services/api";
 import { ChevronsLeft, ChevronsRight, SquarePen, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface TransactionsListProps {
   type: "income" | "expense" | "investment";
@@ -19,15 +20,14 @@ export function TransactionsList({
   const [paginaAtual, setPaginaAtual] = useState(1);
   const itensPorPagina = 5;
 
-  useEffect(() => {
-    async function loadTransactions() {
+  const loadTransactions = useCallback(async () => {
       try {
         setLoading(true);
         const response = await api.get("/transactions");
 
         const filtradosEOrdenados = response
           .filter(
-            (item: any) => item.type?.toUpperCase() === type.toUpperCase()
+            (item: any) => item.type?.toUpperCase() === type.toUpperCase(),
           )
           .sort((a: any, b: any) => {
             const timeA = new Date(a.createdAt).getTime();
@@ -41,30 +41,33 @@ export function TransactionsList({
       } finally {
         setLoading(false);
       }
-    }
+    }, [type]);
 
+  useEffect(() => {
     loadTransactions();
-  }, [type]);
+  }, [loadTransactions]);
 
   // Função para excluir
-  //   const handleDelete = async (id: string) => {
-  //     if (!confirm("Tem certeza que deseja excluir esta transação?")) return;
+  const handleDelete = async (id: string) => {
+    const confirm = window.confirm("Tem certeza que deseja excluir esta transação?");
+    if (!confirm) return;
 
-  //     try {
-  //       await api.delete(`/transactions/${id}`);
-  //       toast.success("Excluído com sucesso!");
-  //       loadTransactions(); // Recarrega a lista
-  //     } catch (error) {
-  //       toast.error("Erro ao excluir transação.");
-  //     }
-  //   };
+    try {
+      await api.delete(`/transactions/${id}`);
+      toast.success("Excluído com sucesso!");
+      loadTransactions();
+    } catch (error) {
+      toast.error("Erro ao excluir transação.");
+      console.log(error);
+    }
+  };
 
   const totalPaginas = Math.ceil(todasTransacoes.length / itensPorPagina);
   const indiceUltimoItem = paginaAtual * itensPorPagina;
   const indicePrimeiroItem = indiceUltimoItem - itensPorPagina;
   const listaExibida = todasTransacoes.slice(
     indicePrimeiroItem,
-    indiceUltimoItem
+    indiceUltimoItem,
   );
 
   // Título dinâmico
@@ -157,9 +160,9 @@ export function TransactionsList({
                       <SquarePen size={18} />
                     </button>
                     <button
-                      //   onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item.id)}
                       className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
-                      //   title="Excluir"
+                        title="Excluir"
                     >
                       <Trash2 size={18} />
                     </button>
