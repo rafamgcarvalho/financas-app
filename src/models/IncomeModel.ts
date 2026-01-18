@@ -5,5 +5,5 @@ export type TransactionModel = {
     transactionDate: string;
     category: string;
     recurring: boolean;
-    type: 'INCOME' | 'EXPENSE';
+    type: 'income' | 'expense' | 'investment';
 }

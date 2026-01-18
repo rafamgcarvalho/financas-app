@@ -32,7 +32,7 @@ export default function DespesasPage() {
     transactionDate: "",
     category: "alimentacao",
     recurring: false,
-    type: "EXPENSE",
+    type: "expense",
   };
 
   const [formData, setFormData] = useState<TransactionModel>(initialFormState);
@@ -252,6 +252,8 @@ export default function DespesasPage() {
             </button>
           </div>
         </form>
+
+        <hr className="my-10 border-gray-100" />
 
         <TransactionsList key={refreshKey} type="expense" exibirAcoes={true}></TransactionsList>
       </div>

@@ -74,8 +74,9 @@ export function TransactionsList({
     investment: "Meus Investimentos",
   };
 
-  if (loading)
+  if (loading) {
     return <p className="p-4 text-gray-500 animate-pulse">Carregando...</p>;
+  }
 
   return (
     <div className="mt-8 bg-white rounded-lg border border-gray-100 shadow-sm">
@@ -138,7 +139,6 @@ export function TransactionsList({
                   })}
                 </td>
                 <td className="px-6 py-4">
-                  {/* Corrigindo possível atraso de fuso horário na data */}
                   {new Date(item.date).toLocaleDateString("pt-BR", {
                     timeZone: "UTC",
                   })}
