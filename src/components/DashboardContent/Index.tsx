@@ -12,13 +12,16 @@ export function DashboardContent() {
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const [selectedDate, setSelectedDate] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+  })
+
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        const data = await api.get("/transactions");
-
-        // console.log("O que retorna da API: ", data);
+        const data = await api.get(`/transactions?month=${selectedDate.month}&year=${selectedDate.year}`);
 
         setTransactions(data);
       } catch (error) {
@@ -29,7 +32,7 @@ export function DashboardContent() {
     };
 
     fetchTransactions();
-  }, []);
+  }, [selectedDate]);
 
   if (loading) {
     return (
@@ -51,6 +54,8 @@ export function DashboardContent() {
 
   const balance = totalIncomes - totalExpenses;
 
+  const dateValue = `${selectedDate.year}-${String(selectedDate.month).padStart(2, '0')}`;
+
   return (
     <Container>
       {/* 1. Cabeçalho da Página */}
@@ -58,7 +63,7 @@ export function DashboardContent() {
         Resumo do Dashboard
       </h1>
 
-      <MonthSelector />
+      <MonthSelector currentValue={dateValue} onChange={(month, year) => setSelectedDate({ month, year })} />
 
       {/* 2. Área de Cartões/Estatísticas */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-6 mb-8">

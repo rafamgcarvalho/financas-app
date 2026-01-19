@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
+
+interface MonthSelectorProps {
+    onChange: (month: number, year: number) => void;
+    currentValue: string;
+}
 
 // Função para gerar a lista dos últimos 12 meses
 function generateLast12Months() {
@@ -17,7 +22,7 @@ function generateLast12Months() {
             .format(date);
             
         // Formatamos o valor (ex: "2025-03")
-        const value = date.toISOString().slice(0, 7); 
+        const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
         months.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
     }
@@ -25,25 +30,32 @@ function generateLast12Months() {
     return months.reverse(); 
 }
 
-export function MonthSelector() {
+export function MonthSelector({ onChange, currentValue }: MonthSelectorProps) {
     // Usamos useMemo para gerar a lista apenas uma vez, otimizando o desempenho
     const months = useMemo(() => generateLast12Months(), []);
+
+    // O valor atual do select baseado na data de hoje
+    // const todayValue = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
     
     // O mês padrão será o mês mais recente da lista gerada
-    const defaultMonth = months[months.length - 1]?.value || '';
+    // const defaultMonth = months[months.length - 1]?.value || '';
     
-    const [selectedMonth, setSelectedMonth] = useState(defaultMonth); 
+    // const [selectedMonth, setSelectedMonth] = useState(defaultMonth); 
 
     const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedMonth(event.target.value);
-        console.log("Mês selecionado:", event.target.value);
+        // setSelectedMonth(event.target.value);
+        const value = event.target.value;
+        const [year, month] = value.split('-').map(Number);
+
+        // Disparamos a função que o Dashboard nos deu
+        onChange(month, year);
     };
 
     return (
         <div className="flex items-center space-x-4 mb-8">
             <select
                 id="month-select"
-                value={selectedMonth}
+                value={currentValue}
                 onChange={handleChange}
                 className="block w-48 py-2 px-3 border border-gray-300 bg-white rounded-md 
                            shadow-sm focus:outline-none focus:ring-[#42B7B2] focus:border-[#42B7B2] 
