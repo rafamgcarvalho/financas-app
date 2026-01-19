@@ -54,7 +54,7 @@ export function TransactionForm({
 
       formRef.current?.scrollIntoView({ 
         behavior: 'smooth', 
-        block: 'start' // Alinha o topo do formulário com o topo da tela
+        block: 'start'
       });
     } else {
       setFormData(initialFormState);
@@ -103,12 +103,14 @@ export function TransactionForm({
     setLoading(true);
 
     try {
+      const safeDate = new Date(`${formData.transactionDate}T12:00:00`);
+
       const payload = {
         title: formData.name,
         amount: amountNumber,
         description:
           formData.description.trim() === "" ? null : formData.description,
-        date: new Date(formData.transactionDate).toISOString(),
+        date: safeDate.toISOString(),
         category: formData.category,
         type: type.toUpperCase(),
         isRecurring: formData.recurring,
@@ -119,7 +121,7 @@ export function TransactionForm({
         toast.success("Transação salva com sucesso!");
       } else {
         await api.post("/transactions", payload);
-        toast.success("Receita salva com sucesso!");
+        toast.success("Transação salva com sucesso!");
       }
 
       setFormData(initialFormState);

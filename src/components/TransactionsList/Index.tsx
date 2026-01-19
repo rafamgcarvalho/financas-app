@@ -11,12 +11,16 @@ interface TransactionsListProps {
   type: "income" | "expense" | "investment";
   exibirAcoes?: boolean;
   onEdit?: (item: any) => void;
+  month?: number;
+  year?: number;
 }
 
 export function TransactionsList({
   type,
   exibirAcoes = true,
-  onEdit
+  onEdit,
+  month,
+  year
 }: TransactionsListProps) {
   const [todasTransacoes, setTodasTransacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +33,14 @@ export function TransactionsList({
   const loadTransactions = useCallback(async () => {
       try {
         setLoading(true);
-        const response = await api.get("/transactions");
+
+        let url = "/transactions";
+        if (month && year) {
+          url += `?month=${month}&year=${year}`;
+        }
+
+        // const response = await api.get("/transactions");
+        const response = await api.get(url);
 
         const filtradosEOrdenados = response
           .filter(
@@ -47,10 +58,11 @@ export function TransactionsList({
       } finally {
         setLoading(false);
       }
-    }, [type]);
+    }, [type, month, year]);
 
   useEffect(() => {
     loadTransactions();
+    setPaginaAtual(1);
   }, [loadTransactions]);
 
   const handleDelete = (id: string) => {
