@@ -10,11 +10,13 @@ import { ConfirmDialog } from "../ConfirmDialog/Index";
 interface TransactionsListProps {
   type: "income" | "expense" | "investment";
   exibirAcoes?: boolean;
+  onEdit?: (item: any) => void;
 }
 
 export function TransactionsList({
   type,
   exibirAcoes = true,
+  onEdit
 }: TransactionsListProps) {
   const [todasTransacoes, setTodasTransacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +26,6 @@ export function TransactionsList({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [idParaExcluir, setIdParaExcluir] = useState<string | null>(null);
   
-
-
   const loadTransactions = useCallback(async () => {
       try {
         setLoading(true);
@@ -169,6 +169,7 @@ export function TransactionsList({
                     <button
                       className="text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
                       title="Editar"
+                      onClick={() => onEdit?.(item)}
                     >
                       <SquarePen size={18} />
                     </button>

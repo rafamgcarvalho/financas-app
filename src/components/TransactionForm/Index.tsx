@@ -4,7 +4,7 @@
 
 import { TransactionModel } from "@/src/models/IncomeModel";
 import { api } from "@/src/services/api";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 interface TransactionFormProps {
@@ -12,12 +12,20 @@ interface TransactionFormProps {
   buttonLabel: string;
   categories: { value: string; label: string }[];
   onSuccess: () => void;
+  initialData?: any;
 }
 
-export function TransactionForm({type, buttonLabel, categories, onSuccess}: TransactionFormProps) {
+export function TransactionForm({
+  type,
+  buttonLabel,
+  categories,
+  onSuccess,
+  initialData,
+}: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
 
-  const initialFormState: TransactionModel = {
+  const initialFormState = useMemo(
+    (): TransactionModel => ({
       name: "",
       description: "",
       amount: "",
@@ -25,80 +33,107 @@ export function TransactionForm({type, buttonLabel, categories, onSuccess}: Tran
       category: categories[0]?.value || "outros",
       recurring: false,
       type: type,
-  };
+    }),
+    [type, categories],
+  );
 
   const [formData, setFormData] = useState<TransactionModel>(initialFormState);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.title || initialData.name,
+        description: initialData.description || "",
+        amount: initialData.amount.toString(),
+        transactionDate: initialData.date.split("T")[0],
+        category: initialData.category,
+        recurring: initialData.isRecurring || false,
+        type: type,
+      });
+
+      formRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' // Alinha o topo do formulário com o topo da tela
+      });
+    } else {
+      setFormData(initialFormState);
+    }
+  }, [initialData, type, initialFormState]);
 
   const handleChange = (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
-    ) => {
-      const { name, value } = e.target;
-  
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
-    };
-  
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, checked } = e.target;
-  
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: checked,
-      }));
-    };
-  
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-  
-      const amountNumber = Number(formData.amount);
-      const errors = [];
-  
-      if (!formData.name) errors.push("Nome inválido");
-      if (!formData.amount || isNaN(amountNumber) || amountNumber < 0)
-        errors.push("Valor inválido");
-      if (!formData.transactionDate) errors.push("Data inválida");
-  
-      if (errors.length > 0) {
-        toast.dismiss();
-        errors.forEach((error) => toast.error(error));
-        return;
-      }
-  
-      setLoading(true);
-  
-      try {
-        const payload = {
-          title: formData.name,
-          amount: amountNumber,
-          description:
-            formData.description.trim() === "" ? null : formData.description,
-          date: new Date(formData.transactionDate).toISOString(),
-          category: formData.category,
-          type: type.toUpperCase(),
-          isRecurring: formData.recurring,
-        };
-  
-        await api.post("/transactions", payload);
-  
-        toast.success("Receita salva com sucesso!");
-  
-        setFormData(initialFormState);
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const { name, value } = e.target;
 
-        onSuccess();
-  
-      } catch (error: any) {
-        toast.error(error.message);
-      } finally {
-        setLoading(false);
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: checked,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const amountNumber = Number(formData.amount);
+    const errors = [];
+
+    if (!formData.name) errors.push("Nome inválido");
+    if (!formData.amount || isNaN(amountNumber) || amountNumber < 0)
+      errors.push("Valor inválido");
+    if (!formData.transactionDate) errors.push("Data inválida");
+
+    if (errors.length > 0) {
+      toast.dismiss();
+      errors.forEach((error) => toast.error(error));
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        title: formData.name,
+        amount: amountNumber,
+        description:
+          formData.description.trim() === "" ? null : formData.description,
+        date: new Date(formData.transactionDate).toISOString(),
+        category: formData.category,
+        type: type.toUpperCase(),
+        isRecurring: formData.recurring,
+      };
+
+      if (initialData?.id) {
+        await api.patch(`/transactions/${initialData.id}`, payload);
+        toast.success("Transação salva com sucesso!");
+      } else {
+        await api.post("/transactions", payload);
+        toast.success("Receita salva com sucesso!");
       }
-    };
+
+      setFormData(initialFormState);
+
+      onSuccess();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div>
+    <div ref={formRef} className="scroll-mt-24">
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -218,8 +253,35 @@ export function TransactionForm({type, buttonLabel, categories, onSuccess}: Tran
           </div>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-4 flex flex-col md:flex-row gap-4">
+          {initialData && (
+            <button
+              type="button"
+              onClick={() => onSuccess()}
+              className="flex-1 py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+          )}
+
           <button
+            type="submit"
+            disabled={loading}
+            className={`flex-1 flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42B7B2] 
+      ${
+        loading
+          ? "bg-gray-400 cursor-not-allowed"
+          : "bg-[#42B7B2] hover:bg-teal-600 hover:cursor-pointer"
+      }`}
+          >
+            {loading
+              ? "Salvando..."
+              : initialData
+                ? "Salvar Alterações"
+                : buttonLabel}
+          </button>
+
+          {/* <button
             type="submit"
             disabled={loading}
             className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42B7B2] 
@@ -230,7 +292,7 @@ export function TransactionForm({type, buttonLabel, categories, onSuccess}: Tran
                         }`}
           >
             {loading ? "Salvando..." : buttonLabel}
-          </button>
+          </button> */}
         </div>
       </form>
     </div>

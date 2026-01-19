@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const API_URL = 'http://localhost:3001';
+const API_URL = "http://localhost:3001";
 
 const getAuthToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("token");
   }
   return null;
 };
@@ -13,17 +13,17 @@ export const api = {
     const token = getAuthToken();
 
     const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Erro ao processar requisição');
+      throw new Error(errorData.message || "Erro ao processar requisição");
     }
 
     return response.json();
@@ -33,17 +33,35 @@ export const api = {
     const token = getAuthToken();
 
     const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Erro ao buscar dados');
+      throw new Error(errorData.message || "Erro ao buscar dados");
     }
 
+    return response.json();
+  },
+
+  async patch(endpoint: string, data: any) {
+    const token = getAuthToken();
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Erro ao atualizar");
+    }
     return response.json();
   },
 
@@ -51,17 +69,17 @@ export const api = {
     const token = getAuthToken();
 
     const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Erro ao processar requisição');
+      throw new Error(errorData.message || "Erro ao processar requisição");
     }
 
     return response.json();
-  }
+  },
 };

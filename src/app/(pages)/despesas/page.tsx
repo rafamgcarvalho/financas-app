@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+ "use client";
 
 import { Container } from "@/src/components/Container/Index";
 import { TransactionForm } from "@/src/components/TransactionForm/Index";
