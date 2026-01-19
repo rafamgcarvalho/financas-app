@@ -280,19 +280,6 @@ export function TransactionForm({
                 ? "Salvar Alterações"
                 : buttonLabel}
           </button>
-
-          {/* <button
-            type="submit"
-            disabled={loading}
-            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42B7B2] 
-                        ${
-                          loading
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-[#42B7B2] hover:bg-teal-600 hover:cursor-pointer"
-                        }`}
-          >
-            {loading ? "Salvando..." : buttonLabel}
-          </button> */}
         </div>
       </form>
     </div>

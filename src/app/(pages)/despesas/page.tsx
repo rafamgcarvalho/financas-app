@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
  "use client";
 
 import { Container } from "@/src/components/Container/Index";
@@ -17,23 +18,29 @@ const categories = [
 
 export default function DespesasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
 
   const handleSuccess = () => {
     setRefreshKey((prev) => prev + 1);
+    setEditingTransaction(null);
+  }
+
+  const handleEdit = (transaction: any) => {
+    setEditingTransaction(transaction);
   }
 
   return (
     <Container>
       <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">
-          Adicionar Nova Despesa
+          {editingTransaction ? "Editar Despesa" : "Adicionar Nova Despesa"}
         </h2>
 
-        <TransactionForm type="expense" buttonLabel="Salvar Despesa" categories={categories} onSuccess={handleSuccess}></TransactionForm>
+        <TransactionForm type="expense" buttonLabel="Salvar Despesa" categories={categories} onSuccess={handleSuccess} initialData={editingTransaction}></TransactionForm>
 
         <hr className="my-10 border-gray-100" />
 
-        <TransactionsList key={refreshKey} type="expense" exibirAcoes={true}></TransactionsList>
+        <TransactionsList key={refreshKey} type="expense" exibirAcoes={true} onEdit={handleEdit}></TransactionsList>
       </div>
     </Container>
   );
