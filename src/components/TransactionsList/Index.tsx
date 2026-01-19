@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/src/services/api";
 import { ChevronsLeft, ChevronsRight, SquarePen, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { ConfirmDialog } from "../ConfirmDialog/Index";
 
 interface TransactionsListProps {
   type: "income" | "expense" | "investment";
@@ -19,6 +20,11 @@ export function TransactionsList({
   const [loading, setLoading] = useState(true);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const itensPorPagina = 5;
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [idParaExcluir, setIdParaExcluir] = useState<string | null>(null);
+  
+
 
   const loadTransactions = useCallback(async () => {
       try {
@@ -47,18 +53,25 @@ export function TransactionsList({
     loadTransactions();
   }, [loadTransactions]);
 
+  const handleDelete = (id: string) => {
+    setIdParaExcluir(id);
+    setIsModalOpen(true);
+  }
+
   // Função para excluir
-  const handleDelete = async (id: string) => {
-    const confirm = window.confirm("Tem certeza que deseja excluir esta transação?");
-    if (!confirm) return;
+  const confirmDelete = async () => {
+    if (!idParaExcluir) return;
 
     try {
-      await api.delete(`/transactions/${id}`);
+      await api.delete(`/transactions/${idParaExcluir}`);
       toast.success("Excluído com sucesso!");
       loadTransactions();
     } catch (error) {
       toast.error("Erro ao excluir transação.");
       console.log(error);
+    } finally {
+      setIsModalOpen(false);
+      setIdParaExcluir(null);
     }
   };
 
@@ -178,6 +191,8 @@ export function TransactionsList({
           </div>
         )}
       </div>
+
+      <ConfirmDialog title="Confirmar exclusão" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={confirmDelete} message="Tem certeza que deseja excluir esta transação?"  />
     </div>
   );
 }
