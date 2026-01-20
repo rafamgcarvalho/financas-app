@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/src/services/api";
 import { SummaryCard } from "../SummaryCard/Index";
 import { SpinLoader } from "../SpinLoader/Index";
+import UserDropdown from "../UserDropdown/Index";
 
 export function DashboardContent() {
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
@@ -59,9 +60,13 @@ export function DashboardContent() {
   return (
     <Container>
       {/* 1. Cabeçalho da Página */}
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">
-        Resumo do Dashboard
-      </h1>
+      <div className="flex justify-between items-center w-full mb-6">
+        <h1 className="text-3xl font-bold mb-6 text-gray-800">
+          Resumo do Dashboard
+        </h1>
+
+        <UserDropdown />
+      </div>
 
       <MonthSelector currentValue={dateValue} onChange={(month, year) => setSelectedDate({ month, year })} />
 

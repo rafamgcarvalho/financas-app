@@ -1,6 +1,6 @@
 "use client";
 
-import { BanknoteArrowDown, Goal, HandCoins, LogOut, PiggyBank} from "lucide-react";
+import { BanknoteArrowDown, Goal, HandCoins, PiggyBank} from "lucide-react";
 import { LayoutDashboard } from "lucide-react";
 import { SidebarItem } from "../SideBarItem/Index";
 
@@ -17,10 +17,6 @@ export function SideBar() {
                 <SidebarItem icon={BanknoteArrowDown} name="Despesas" url="/despesas"></SidebarItem>
                 <SidebarItem icon={PiggyBank} name="Investimentos" url="/investimentos"></SidebarItem>
             </nav>
-
-            <div className="mt-auto">
-                <SidebarItem icon={LogOut} name="Sair" url="#"></SidebarItem>
-            </div>
         </div>
     )
 }

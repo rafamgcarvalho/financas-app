@@ -21,6 +21,7 @@ export default function LoginPage() {
       const data = await api.post("/auth/login", { username, password });
 
       localStorage.setItem("token", data.access_token);
+      localStorage.setItem("username", username);
       toast.success("Login realizado com sucesso!");
 
       router.push("/");
