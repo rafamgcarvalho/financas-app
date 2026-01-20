@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { api } from "@/src/services/api";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -15,25 +18,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3001/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Erro ao fazer login");
-      }
+      const data = await api.post("/auth/login", { username, password });
 
       localStorage.setItem("token", data.access_token);
-      
       toast.success("Login realizado com sucesso!");
-      
-      router.push("/"); 
+
+      router.push("/");
       router.refresh();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -44,23 +35,31 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full p-8 bg-white rounded-xl shadow-lg border border-gray-100">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Finanças App</h2>
-        
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+          Finanças App
+        </h2>
+
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nome de Usuário
+            </label>
             <input
-              type="email"
+              type="text"
               required
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Nome de usuário"
+              value={username}
+              onChange={(e) =>
+                setUsername(e.target.value.replace(/\s/g, "").toLowerCase())
+              }
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Senha
+            </label>
             <input
               type="password"
               required
@@ -79,6 +78,16 @@ export default function LoginPage() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
+
+        <div className="m-6 text-center text-sm text-gray-600">
+          Não tem uma conta?{" "}
+          <Link
+            href="/register"
+            className="text-[#42B7B2] font-medium hover:underline"
+          >
+            Cadastre-se
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -82,7 +82,7 @@ export function DashboardContent() {
 
         <SummaryCard
           title="Investimentos Totais"
-          amount={1200}
+          amount={0}
           type="investment"
         />
 
