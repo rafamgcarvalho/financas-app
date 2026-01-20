@@ -1,3 +1,9 @@
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Wallet,
+  TrendingUp,
+} from "lucide-react";
 import { formatCurrency } from "@/src/utils/formatCurrency";
 
 type SummaryCardProps = {
@@ -8,34 +14,67 @@ type SummaryCardProps = {
 
 const styles = {
   income: {
-    card: "bg-blue-100 p-5 rounded-lg shadow-xl",
-    titleText: "text-sm text-blue-600",
-    valueText: "text-2xl font-semibold text-blue-800",
+    gradient: "from-blue-500 to-blue-700",
+    icon: ArrowUpCircle,
+    iconBg: "bg-blue-100 text-blue-600",
+    text: "text-blue-100",
   },
   expense: {
-    card: "bg-red-100 p-5 rounded-lg shadow-xl",
-    titleText: "text-sm text-red-600",
-    valueText: "text-2xl font-semibold text-red-800",
+    gradient: "from-red-500 to-red-700",
+    icon: ArrowDownCircle,
+    iconBg: "bg-red-100 text-red-600",
+    text: "text-red-100",
   },
   investment: {
-    card: "bg-slate-200 p-5 rounded-lg shadow-xl",
-    titleText: "text-sm text-slate-600",
-    valueText: "text-2xl font-semibold text-slate-800",
+    gradient: "from-slate-500 to-slate-700",
+    icon: TrendingUp,
+    iconBg: "bg-slate-100 text-slate-600",
+    text: "text-slate-100",
   },
   balance: {
-    card: "bg-green-100 p-5 rounded-lg shadow-xl",
-    titleText: "text-sm text-green-600",
-    valueText: "text-2xl font-semibold text-green-800",
+    gradient: "from-emerald-500 to-emerald-700",
+    icon: Wallet,
+    iconBg: "bg-emerald-100 text-emerald-600",
+    text: "text-emerald-100",
   },
 };
 
 export function SummaryCard({ title, amount, type }: SummaryCardProps) {
   const currentStyle = styles[type];
+  const Icon = currentStyle.icon;
 
   return (
-    <div className={currentStyle.card}>
-      <p className={currentStyle.titleText}>{title}</p>
-      <p className={currentStyle.valueText}>{formatCurrency(amount)}</p>
+    <div
+      className={`
+        relative overflow-hidden rounded-2xl p-6
+        bg-linear-to-br ${currentStyle.gradient}
+        shadow-lg transition-all duration-300
+        hover:-translate-y-1 hover:shadow-2xl
+      `}
+    >
+      {/* brilho decorativo */}
+      <div className="absolute top-0 right-0 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+
+      <div className="relative flex items-center justify-between">
+        <div>
+          <p className={`text-sm font-medium ${currentStyle.text}`}>
+            {title}
+          </p>
+
+          <p className="mt-1 text-3xl font-bold text-white">
+            {formatCurrency(amount)}
+          </p>
+        </div>
+
+        <div
+          className={`
+            flex h-12 w-12 items-center justify-center
+            rounded-xl ${currentStyle.iconBg}
+          `}
+        >
+          <Icon size={26} />
+        </div>
+      </div>
     </div>
   );
 }
