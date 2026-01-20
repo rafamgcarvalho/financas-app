@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/components/TransactionForm/Index.tsx
 "use client";
 
 import { TransactionModel } from "@/src/models/IncomeModel";
@@ -52,9 +51,9 @@ export function TransactionForm({
         type: type,
       });
 
-      formRef.current?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start'
+      formRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
       });
     } else {
       setFormData(initialFormState);
@@ -68,8 +67,8 @@ export function TransactionForm({
   ) => {
     const { name, value } = e.target;
 
-    setFormData((prevData) => ({
-      ...prevData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
     }));
   };
@@ -77,8 +76,8 @@ export function TransactionForm({
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
 
-    setFormData((prevData) => ({
-      ...prevData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: checked,
     }));
   };
@@ -125,7 +124,6 @@ export function TransactionForm({
       }
 
       setFormData(initialFormState);
-
       onSuccess();
     } catch (error: any) {
       toast.error(error.message);
@@ -136,98 +134,89 @@ export function TransactionForm({
 
   return (
     <div ref={formRef} className="scroll-mt-24">
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* 🧾 Dados principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label
-              htmlFor="nome"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Nome
             </label>
             <input
               type="text"
-              id="name"
               name="name"
-              placeholder="Ex: Salário Mensal"
+              placeholder={
+                type === "income"
+                  ? "Ex: Salário Mensal"
+                  : type === "expense"
+                    ? "Ex: Aluguel"
+                    : "Ex: Aporte em Investimento"
+              }
               value={formData.name}
               onChange={handleChange}
-              required
-              className="w-full border-gray-300 focus:border-[#42B7B2] focus:ring-[#42B7B2] rounded-md shadow-sm p-3 border"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
+                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
             />
           </div>
 
           <div>
-            <label
-              htmlFor="valor"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Valor (R$)
             </label>
             <input
               type="number"
-              id="amount"
               name="amount"
-              placeholder="0.00"
+              placeholder="0,00"
               step="0.01"
-              required
               value={formData.amount}
               onChange={handleChange}
-              className="w-full border-gray-300 focus:border-[#42B7B2] focus:ring-[#42B7B2] rounded-md shadow-sm p-3 border"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
+                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
             />
           </div>
         </div>
 
+        {/* 📝 Descrição */}
         <div>
-          <label
-            htmlFor="descricao"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label className="block text-sm font-medium text-gray-600 mb-1">
             Descrição
           </label>
           <textarea
-            id="description"
             name="description"
             rows={3}
-            placeholder="Detalhes sobre a origem da receita..."
+            placeholder="Informações adicionais sobre a transação..."
             value={formData.description}
             onChange={handleChange}
-            className="w-full border-gray-300 focus:border-[#42B7B2] focus:ring-[#42B7B2] rounded-md shadow-sm p-3 border"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
+              focus:border-[#42B7B2] focus:ring-[#42B7B2]"
           />
         </div>
 
+        {/* 📅 Meta dados */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
           <div>
-            <label
-              htmlFor="data"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Data
             </label>
             <input
               type="date"
-              id="transactionDate"
               name="transactionDate"
-              required
               value={formData.transactionDate}
               onChange={handleChange}
-              className="w-full border-gray-300 focus:border-[#42B7B2] focus:ring-[#42B7B2] rounded-md shadow-sm p-3 border"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
+                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
             />
           </div>
 
           <div>
-            <label
-              htmlFor="category"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Categoria
             </label>
             <select
-              id="category"
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full border-gray-300 focus:border-[#42B7B2] focus:ring-[#42B7B2] rounded-md shadow-sm p-3 border"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
+                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
             >
               {categories.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -237,30 +226,26 @@ export function TransactionForm({
             </select>
           </div>
 
-          <div className="flex items-center">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
             <input
-              id="recurring"
-              name="recurring"
               type="checkbox"
+              name="recurring"
               checked={formData.recurring}
               onChange={handleCheckboxChange}
-              className="h-4 w-4 text-[#42B7B2] border-gray-300 rounded focus:ring-[#42B7B2]"
+              className="h-4 w-4 rounded border-gray-300 text-[#42B7B2] focus:ring-[#42B7B2]"
             />
-            <label
-              htmlFor="recurring"
-              className="ml-2 block text-sm font-medium text-gray-700"
-            >
-              É Recorrente (Mensal)
-            </label>
-          </div>
+            Transação recorrente
+          </label>
         </div>
 
-        <div className="pt-4 flex flex-col md:flex-row gap-4">
+        {/* 🔘 Ações */}
+        <div className="flex flex-col md:flex-row gap-4 pt-4">
           {initialData && (
             <button
               type="button"
-              onClick={() => onSuccess()}
-              className="flex-1 py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition cursor-pointer"
+              onClick={onSuccess}
+              className="flex-1 rounded-xl border border-red-300 bg-red-50 py-3 text-sm
+                font-medium text-red-600 hover:bg-red-100 transition cursor-pointer"
             >
               Cancelar
             </button>
@@ -269,12 +254,12 @@ export function TransactionForm({
           <button
             type="submit"
             disabled={loading}
-            className={`flex-1 flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42B7B2] 
-      ${
-        loading
-          ? "bg-gray-400 cursor-not-allowed"
-          : "bg-[#42B7B2] hover:bg-teal-600 hover:cursor-pointer"
-      }`}
+            className={`flex-1 rounded-xl py-3 text-sm font-medium text-white transition cursor-pointer
+              ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#42B7B2] hover:bg-teal-600"
+              }`}
           >
             {loading
               ? "Salvando..."

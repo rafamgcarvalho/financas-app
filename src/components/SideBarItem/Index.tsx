@@ -11,20 +11,36 @@ type SidebarItemProps = {
 };
 
 export function SidebarItem({ icon: Icon, name, url }: SidebarItemProps) {
-    const pathname = usePathname();
-    const isActive = pathname === url;
+  const pathname = usePathname();
+  const isActive = pathname === url;
 
-    const bgClasses = `hover:bg-[#42B7B2] transition-colors duration-200 ease-in-out ${isActive ? "bg-[#42B7B2] text-white" : "text-gray-300 hover:bg-white/10"}`;
-
-    const layoutClasses = "flex items-center justify-center gap-3 p-3 text-base sm:gap-4 sm:p-4 sm:text-lg md:gap-5 md:p-5 md:justify-start lg:gap-6 lg:p-6 lg:text-xl";
-
-    return (
+  return (
     <Link
-      className={`${bgClasses} ${layoutClasses}`}
       href={url}
+      className={`
+        group flex items-center gap-4
+        px-4 py-3
+        rounded-xl transition-all
+        ${isActive
+          ? "bg-[#42B7B2] text-white shadow-md"
+          : "text-gray-300 hover:bg-white/10 hover:text-white"
+        }
+      `}
     >
-      <Icon size={20} />
-      <span className="hidden md:block">{name}</span>
+      {/* Ícone */}
+      <Icon
+        size={22}
+        className={`
+          transition-colors
+          ${isActive ? "text-white" : "text-gray-400 group-hover:text-white"}
+        `}
+      />
+
+      {/* Texto */}
+      <span className="hidden md:block text-[15px] font-medium">
+        {name}
+      </span>
     </Link>
   );
 }
+

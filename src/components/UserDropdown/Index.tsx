@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -9,25 +10,26 @@ export default function UserDropdown() {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Inicialização segura do estado (Lazy Initialization)
-  // Isso evita o erro de "cascading renders" e funciona com SSR
   const [username, setUsername] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("username") || "Usuário";
+      return localStorage.getItem("name") || "Usuário";
     }
     return "Usuário";
   });
 
-  // Fecha o menu se o usuário clicar em qualquer lugar fora dele
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = () => {
@@ -37,56 +39,98 @@ export default function UserDropdown() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Botão Principal */}
+      {/* Botão */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-1 pr-4 bg-white rounded-full border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-95 group cursor-pointer"
+        className="
+          group flex items-center gap-3 rounded-full border border-gray-200
+          bg-white px-2 py-1.5 shadow-sm
+          transition-all duration-200
+          hover:shadow-md hover:border-gray-300
+          active:scale-[0.97] cursor-pointer
+        "
       >
-        {/* Avatar com a Inicial */}
-        <div className="w-9 h-9 bg-[#42B7B2] rounded-full flex items-center justify-center text-white font-bold shadow-inner uppercase transition-colors group-hover:bg-teal-600">
+        {/* Avatar */}
+        <div className="
+          flex h-9 w-9 items-center justify-center rounded-full
+          bg-linear-to-br from-teal-400 to-teal-600
+          text-sm font-bold uppercase text-white
+          shadow-inner
+        ">
           {username.charAt(0)}
         </div>
 
-        {/* Nome e Status */}
+        {/* Nome */}
         <div className="hidden sm:flex flex-col text-left">
-          <span className="text-sm font-bold text-gray-700 leading-none">
+          <span className="text-sm font-semibold text-gray-700 leading-none">
             @{username}
           </span>
-          <span className="text-[10px] text-teal-600 font-semibold uppercase tracking-wider mt-1">
-            Conta Ativa
+          <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-teal-600">
+            Conta ativa
           </span>
         </div>
 
-        {/* Ícone de Seta */}
-        <ChevronDown 
-          size={16} 
-          className={`text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
+        {/* Chevron */}
+        <ChevronDown
+          size={16}
+          className={`
+            ml-1 text-gray-400 transition-transform duration-200
+            ${isOpen ? "rotate-180" : ""}
+          `}
         />
       </button>
 
-      {/* Menu Dropdown */}
+      {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in duration-150 origin-top-right">
-          <div className="px-4 py-2 border-b border-gray-50 mb-1">
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Gerenciar Conta</p>
+        <div className="
+          absolute right-0 z-50 mt-2 w-56
+          rounded-2xl border border-gray-100 bg-white
+          shadow-xl
+          animate-in fade-in zoom-in duration-150
+          origin-top-right
+        ">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+              Conta
+            </p>
+            <p className="mt-0.5 text-sm font-medium text-gray-700">
+              @{username}
+            </p>
           </div>
 
-          <button className="w-full px-4 py-2.5 text-left text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-3 transition-colors cursor-pointer">
-            <User size={18} className="text-gray-400" /> 
-            Meu Perfil
-          </button>
+          {/* Itens */}
+          <div className="py-2">
+            <button className="
+              flex w-full items-center gap-3 px-4 py-2.5
+              text-sm text-gray-600
+              hover:bg-gray-50 transition-colors cursor-pointer
+            ">
+              <User size={18} className="text-gray-400" />
+              Meu Perfil
+            </button>
 
-          <button className="w-full px-4 py-2.5 text-left text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-3 transition-colors cursor-pointer">
-            <Settings size={18} className="text-gray-400" /> 
-            Configurações
-          </button>
+            <button className="
+              flex w-full items-center gap-3 px-4 py-2.5
+              text-sm text-gray-600
+              hover:bg-gray-50 transition-colors cursor-pointer
+            ">
+              <Settings size={18} className="text-gray-400" />
+              Configurações
+            </button>
+          </div>
 
-          <div className="border-t border-gray-50 mt-1 pt-1">
+          {/* Logout */}
+          <div className="border-t border-gray-100 p-2">
             <button
               onClick={handleLogout}
-              className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-3 font-medium transition-colors cursor-pointer"
+              className="
+                flex w-full items-center gap-3 rounded-lg
+                px-3 py-2.5 text-sm font-medium text-red-500
+                hover:bg-red-50 transition-colors cursor-pointer
+              "
             >
-              <LogOut size={18} /> 
+              <LogOut size={18} />
               Sair da conta
             </button>
           </div>

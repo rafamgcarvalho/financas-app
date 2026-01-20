@@ -43,24 +43,52 @@ export default function RegisterPage() {
       await api.post("/users", formData);
 
       toast.success("Usuário cadastrado com sucesso!");
-
       router.push("/login");
     } catch (error: any) {
-      const message = error.message || "Erro ao realizar cadastro";
-      toast.error(message);
+      toast.error(error.message || "Erro ao realizar cadastro");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full p-8 bg-white rounded-xl shadow-lg border border-gray-100">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-50">
+      {/* 🔵 Shape 1 */}
+      <div
+        className="absolute w-[500px] h-[500px] bg-teal-200 rounded-full blur-3xl opacity-30"
+        style={{
+          top: "-150px",
+          left: "-150px",
+          animation: "float1 28s ease-in-out infinite",
+        }}
+      />
+
+      {/* 🔵 Shape 2 */}
+      <div
+        className="absolute w-[450px] h-[450px] bg-blue-200 rounded-full blur-3xl opacity-25"
+        style={{
+          bottom: "-150px",
+          right: "-150px",
+          animation: "float2 32s ease-in-out infinite",
+        }}
+      />
+
+      {/* 🔵 Shape 3 */}
+      <div
+        className="absolute w-[400px] h-[400px] bg-teal-100 rounded-full blur-3xl opacity-20"
+        style={{
+          top: "40%",
+          right: "-200px",
+          animation: "float3 26s ease-in-out infinite",
+        }}
+      />
+
+      {/* 🧊 Card */}
+      <div className="relative z-10 max-w-md w-full p-8 rounded-2xl border border-white/40 bg-white/80 backdrop-blur-xl shadow-xl">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
           Finanças App
         </h2>
 
-        {/* onSubmit={handleLogin} */}
         <form className="space-y-6" onSubmit={handleRegister}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -70,10 +98,10 @@ export default function RegisterPage() {
               type="text"
               required
               name="name"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
               placeholder="Seu nome"
               value={formData.name}
               onChange={handleChange}
+              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
             />
           </div>
 
@@ -85,10 +113,10 @@ export default function RegisterPage() {
               type="text"
               required
               name="username"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
-              placeholder="seu@email.com"
+              placeholder="Seu usuário"
               value={formData.username}
               onChange={handleChange}
+              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
             />
           </div>
 
@@ -100,32 +128,65 @@ export default function RegisterPage() {
               type="password"
               required
               name="password"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
+              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[#42B7B2] text-white font-bold rounded-md hover:bg-teal-600 transition duration-200 disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-[#42B7B2] text-white font-semibold transition hover:bg-teal-600 disabled:opacity-50 cursor-pointer"
           >
             {loading ? "Cadastrando..." : "Cadastrar"}
           </button>
         </form>
 
-        <div className="m-6 text-center text-sm text-gray-600">
-            Já tem uma conta?{" "}
-            <Link
-              href="/login"
-              className="text-[#42B7B2] font-medium hover:underline"
-            >
-              Entrar
-            </Link>
-          </div>
+        <div className="mt-6 text-center text-sm text-gray-600">
+          Já tem uma conta?{" "}
+          <Link
+            href="/login"
+            className="text-[#42B7B2] font-medium hover:underline"
+          >
+            Entrar
+          </Link>
+        </div>
       </div>
+
+      {/* 🎞️ Keyframes */}
+      <style jsx global>{`
+        @keyframes float1 {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+          50% {
+            transform: translate(40px, 30px) scale(1.05);
+          }
+        }
+
+        @keyframes float2 {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+          50% {
+            transform: translate(-30px, -40px) scale(1.06);
+          }
+        }
+
+        @keyframes float3 {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+          50% {
+            transform: translate(-20px, 20px) scale(1.04);
+          }
+        }
+      `}</style>
     </div>
   );
 }

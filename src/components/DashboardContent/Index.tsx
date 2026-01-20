@@ -16,14 +16,15 @@ export function DashboardContent() {
   const [selectedDate, setSelectedDate] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
-  })
+  });
 
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        const data = await api.get(`/transactions?month=${selectedDate.month}&year=${selectedDate.year}`);
-
+        const data = await api.get(
+          `/transactions?month=${selectedDate.month}&year=${selectedDate.year}`
+        );
         setTransactions(data);
       } catch (error) {
         console.error("Erro ao carregar transações", error);
@@ -47,32 +48,45 @@ export function DashboardContent() {
     .filter((t) => t.type?.toLowerCase() === "income")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
-  // console.log("Total incomes: ", totalIncomes);
-
   const totalExpenses = transactions
     .filter((t) => t.type?.toLowerCase() === "expense")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
   const balance = totalIncomes - totalExpenses;
 
-  const dateValue = `${selectedDate.year}-${String(selectedDate.month).padStart(2, '0')}`;
+  const dateValue = `${selectedDate.year}-${String(selectedDate.month).padStart(
+    2,
+    "0"
+  )}`;
 
   return (
     <Container>
-      {/* 1. Cabeçalho da Página */}
-      <div className="flex justify-between items-center w-full mb-6">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">
-          Resumo do Dashboard
-        </h1>
+      {/* Header */}
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-800">
+            Resumo do Dashboard
+          </h1>
+
+          <p className="text-sm text-gray-500">
+            Visão geral das suas finanças
+          </p>
+
+          <div className="mt-8">
+            <MonthSelector
+              currentValue={dateValue}
+              onChange={(month, year) =>
+                setSelectedDate({ month, year })
+              }
+            />
+          </div>
+        </div>
 
         <UserDropdown />
       </div>
 
-      <MonthSelector currentValue={dateValue} onChange={(month, year) => setSelectedDate({ month, year })} />
-
-      {/* 2. Área de Cartões/Estatísticas */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-6 mb-8">
-
+      {/* Cards */}
+      <div className="mb-10 grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6">
         <SummaryCard
           title="Receitas Totais"
           amount={totalIncomes}
@@ -91,19 +105,22 @@ export function DashboardContent() {
           type="investment"
         />
 
-        <SummaryCard 
-          title="Balanço" 
-          amount={balance} 
-          type="balance" 
+        <SummaryCard
+          title="Balanço"
+          amount={balance}
+          type="balance"
         />
       </div>
 
-      {/* 3. Área de Gráficos/Tabelas */}
-      <div className="bg-white p-6 rounded-lg shadow-xl border border-gray-100">
-        <h2 className="text-xl font-semibold mb-4 text-gray-700">
-          Fluxo de Caixa Mensal
-        </h2>
-        <div className="h-64 flex items-center justify-center text-gray-400">
+      {/* Gráfico / Tabela */}
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="border-b border-gray-100 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-700">
+            Fluxo de Caixa Mensal
+          </h2>
+        </div>
+
+        <div className="flex h-72 items-center justify-center text-sm text-gray-400">
           [Placeholder para Gráfico ou Tabela]
         </div>
       </div>

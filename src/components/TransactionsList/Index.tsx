@@ -20,7 +20,7 @@ export function TransactionsList({
   exibirAcoes = true,
   onEdit,
   month,
-  year
+  year,
 }: TransactionsListProps) {
   const [todasTransacoes, setTodasTransacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,36 +29,33 @@ export function TransactionsList({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [idParaExcluir, setIdParaExcluir] = useState<string | null>(null);
-  
+
   const loadTransactions = useCallback(async () => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
 
-        let url = "/transactions";
-        if (month && year) {
-          url += `?month=${month}&year=${year}`;
-        }
-
-        // const response = await api.get("/transactions");
-        const response = await api.get(url);
-
-        const filtradosEOrdenados = response
-          .filter(
-            (item: any) => item.type?.toUpperCase() === type.toUpperCase(),
-          )
-          .sort((a: any, b: any) => {
-            const timeA = new Date(a.createdAt).getTime();
-            const timeB = new Date(b.createdAt).getTime();
-            return timeB - timeA;
-          });
-
-        setTodasTransacoes(filtradosEOrdenados);
-      } catch (error) {
-        console.error("Erro ao carregar", error);
-      } finally {
-        setLoading(false);
+      let url = "/transactions";
+      if (month && year) {
+        url += `?month=${month}&year=${year}`;
       }
-    }, [type, month, year]);
+
+      const response = await api.get(url);
+
+      const filtradosEOrdenados = response
+        .filter((item: any) => item.type?.toUpperCase() === type.toUpperCase())
+        .sort((a: any, b: any) => {
+          const timeA = new Date(a.createdAt).getTime();
+          const timeB = new Date(b.createdAt).getTime();
+          return timeB - timeA;
+        });
+
+      setTodasTransacoes(filtradosEOrdenados);
+    } catch (error) {
+      console.error("Erro ao carregar transações", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [type, month, year]);
 
   useEffect(() => {
     loadTransactions();
@@ -68,9 +65,8 @@ export function TransactionsList({
   const handleDelete = (id: string) => {
     setIdParaExcluir(id);
     setIsModalOpen(true);
-  }
+  };
 
-  // Função para excluir
   const confirmDelete = async () => {
     if (!idParaExcluir) return;
 
@@ -80,7 +76,7 @@ export function TransactionsList({
       loadTransactions();
     } catch (error) {
       toast.error("Erro ao excluir transação.");
-      console.log(error);
+      console.error(error);
     } finally {
       setIsModalOpen(false);
       setIdParaExcluir(null);
@@ -95,11 +91,16 @@ export function TransactionsList({
     indiceUltimoItem,
   );
 
-  // Título dinâmico
   const titulos = {
     income: "Últimas Receitas",
     expense: "Últimas Despesas",
     investment: "Meus Investimentos",
+  };
+
+  const valorColor = {
+    income: "text-green-600",
+    expense: "text-red-600",
+    investment: "text-[#42B7B2]",
   };
 
   if (loading) {
@@ -116,19 +117,21 @@ export function TransactionsList({
             <span className="text-sm text-gray-500 mr-2">
               Página {paginaAtual} de {totalPaginas}
             </span>
+
             <button
               onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
               disabled={paginaAtual === 1}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-all"
+              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"
             >
               <ChevronsLeft size={20} />
             </button>
+
             <button
               onClick={() =>
                 setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))
               }
               disabled={paginaAtual === totalPaginas}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition-all"
+              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"
             >
               <ChevronsRight size={20} />
             </button>
@@ -138,7 +141,7 @@ export function TransactionsList({
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-gray-500">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50/50">
+          <thead className="text-xs text-gray-700 uppercase bg-gray-50/60">
             <tr>
               <th className="px-6 py-4">Nome</th>
               <th className="px-6 py-4">Valor</th>
@@ -147,48 +150,53 @@ export function TransactionsList({
               {exibirAcoes && <th className="px-6 py-4 text-center">Ações</th>}
             </tr>
           </thead>
+
           <tbody className="divide-y divide-gray-100">
             {listaExibida.map((item) => (
               <tr
                 key={item.id}
-                className="hover:bg-gray-50/50 transition-colors"
+                className="hover:bg-gray-50 transition-colors duration-150"
               >
                 <td className="px-6 py-4 font-medium text-gray-900">
                   {item.title || item.name}
                 </td>
-                <td
-                  className={`px-6 py-4 font-bold ${
-                    type === "income" ? "text-green-600" : "text-red-600"
-                  }`}
-                >
+
+                <td className={`px-6 py-4 font-bold ${valorColor[type]}`}>
                   R${" "}
                   {Number(item.amount).toLocaleString("pt-BR", {
                     minimumFractionDigits: 2,
                   })}
                 </td>
+
                 <td className="px-6 py-4">
                   {new Date(item.date).toLocaleDateString("pt-BR", {
                     timeZone: "UTC",
                   })}
                 </td>
+
                 <td className="px-6 py-4">
-                  <span className="bg-gray-100 px-2 py-1 rounded text-[10px] font-semibold text-gray-600 uppercase">
+                  <span
+                    className="inline-flex items-center px-3 py-1 rounded-full text-[11px]
+  font-medium bg-gray-100 text-gray-700 border border-gray-200 uppercase"
+                  >
                     {item.category}
                   </span>
                 </td>
+
                 {exibirAcoes && (
                   <td className="px-6 py-4 text-center space-x-3">
                     <button
-                      className="text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
-                      title="Editar"
                       onClick={() => onEdit?.(item)}
+                      title="Editar"
+                      className="text-blue-500 hover:text-blue-700 transition-colors"
                     >
                       <SquarePen size={18} />
                     </button>
+
                     <button
-                        onClick={() => handleDelete(item.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
-                        title="Excluir"
+                      onClick={() => handleDelete(item.id)}
+                      title="Excluir"
+                      className="text-red-500 hover:text-red-700 transition-colors"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -198,6 +206,7 @@ export function TransactionsList({
             ))}
           </tbody>
         </table>
+
         {todasTransacoes.length === 0 && (
           <div className="p-10 text-center text-gray-400">
             Nenhum registro encontrado.
@@ -205,7 +214,13 @@ export function TransactionsList({
         )}
       </div>
 
-      <ConfirmDialog title="Confirmar exclusão" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={confirmDelete} message="Tem certeza que deseja excluir esta transação?"  />
+      <ConfirmDialog
+        title="Confirmar exclusão"
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={confirmDelete}
+        message="Tem certeza que deseja excluir esta transação?"
+      />
     </div>
   );
 }
