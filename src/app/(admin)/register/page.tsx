@@ -52,10 +52,10 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-50">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-100">
       {/* 🔵 Shape 1 */}
       <div
-        className="absolute w-[500px] h-[500px] bg-teal-200 rounded-full blur-3xl opacity-30"
+        className="absolute w-[500px] h-[500px] bg-teal-600 rounded-full blur-3xl opacity-30"
         style={{
           top: "-150px",
           left: "-150px",
@@ -65,7 +65,7 @@ export default function RegisterPage() {
 
       {/* 🔵 Shape 2 */}
       <div
-        className="absolute w-[450px] h-[450px] bg-blue-200 rounded-full blur-3xl opacity-25"
+        className="absolute w-[450px] h-[450px] bg-blue-600 rounded-full blur-3xl opacity-25"
         style={{
           bottom: "-150px",
           right: "-150px",
@@ -75,7 +75,7 @@ export default function RegisterPage() {
 
       {/* 🔵 Shape 3 */}
       <div
-        className="absolute w-[400px] h-[400px] bg-teal-100 rounded-full blur-3xl opacity-20"
+        className="absolute w-[400px] h-[400px] bg-teal-300 rounded-full blur-3xl opacity-20"
         style={{
           top: "40%",
           right: "-200px",
@@ -84,7 +84,7 @@ export default function RegisterPage() {
       />
 
       {/* 🧊 Card */}
-      <div className="relative z-10 max-w-md w-full p-8 rounded-2xl border border-white/40 bg-white/80 backdrop-blur-xl shadow-xl">
+      <div className="relative z-10 max-w-md w-full p-8 rounded-2xl border border-white/60 bg-white/80 backdrop-blur-xl shadow-xl">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
           Finanças App
         </h2>
