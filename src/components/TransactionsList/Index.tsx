@@ -188,7 +188,7 @@ export function TransactionsList({
                     <button
                       onClick={() => onEdit?.(item)}
                       title="Editar"
-                      className="text-blue-500 hover:text-blue-700 transition-colors"
+                      className="text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
                     >
                       <SquarePen size={18} />
                     </button>
@@ -196,7 +196,7 @@ export function TransactionsList({
                     <button
                       onClick={() => handleDelete(item.id)}
                       title="Excluir"
-                      className="text-red-500 hover:text-red-700 transition-colors"
+                      className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
                     >
                       <Trash2 size={18} />
                     </button>
