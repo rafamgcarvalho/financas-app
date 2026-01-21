@@ -8,6 +8,7 @@ import { api } from "@/src/services/api";
 import { SummaryCard } from "../SummaryCard/Index";
 import { SpinLoader } from "../SpinLoader/Index";
 import UserDropdown from "../UserDropdown/Index";
+import { TransactionsList } from "../TransactionsList/Index";
 
 export function DashboardContent() {
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
@@ -123,6 +124,19 @@ export function DashboardContent() {
         <div className="flex h-72 items-center justify-center text-sm text-gray-400">
           [Placeholder para Gráfico ou Tabela]
         </div>
+      </div>
+
+      {/* Lista de transações */}
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm mt-8">
+        {/* <div className="border-b border-gray-100 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-700">
+            Últimas transações
+          </h2>
+        </div> */}
+
+        
+        <TransactionsList month={selectedDate.month} year={selectedDate.year} ></TransactionsList>
+        
       </div>
     </Container>
   );
