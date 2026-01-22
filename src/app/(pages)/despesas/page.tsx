@@ -10,12 +10,14 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "@/src/services/api";
 
 const categories = [
+  { value: "moradia", label: "Moradia" },
   { value: "alimentacao", label: "Alimentação" },
-  { value: "moradia", label: "Moradia (Aluguel/Luz)" },
   { value: "transporte", label: "Transporte" },
-  { value: "lazer", label: "Lazer" },
+  { value: "assinaturas", label: "Contas/Assinaturas" },
   { value: "saude", label: "Saúde" },
   { value: "educacao", label: "Educação" },
+  { value: "lazer", label: "Lazer" },
+  { value: "compras", label: "Compras" },
   { value: "outros", label: "Outros" },
 ];
 
