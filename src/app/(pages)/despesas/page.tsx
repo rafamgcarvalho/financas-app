@@ -22,8 +22,11 @@ const categories = [
 export default function DespesasPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
-  
-  const [range, setRange] = useState({ minDate: undefined, maxDate: undefined });
+
+  const [range, setRange] = useState({
+    minDate: undefined,
+    maxDate: undefined,
+  });
 
   const [selectedDate, setSelectedDate] = useState({
     month: new Date().getMonth() + 1,
@@ -45,6 +48,20 @@ export default function DespesasPage() {
     fetchRange();
   }, [fetchRange, refreshKey]);
 
+  useEffect(() => {
+    if (!range.maxDate) return;
+
+    const maxDate = new Date(range.maxDate);
+    const selected = new Date(selectedDate.year, selectedDate.month - 1);
+
+    if (selected > maxDate) {
+      setSelectedDate({
+        month: maxDate.getMonth() + 1,
+        year: maxDate.getFullYear(),
+      });
+    }
+  }, [range, selectedDate]);
+
   const handleSuccess = () => {
     setRefreshKey((prev) => prev + 1);
     setEditingTransaction(null);
@@ -57,11 +74,8 @@ export default function DespesasPage() {
   return (
     <Container>
       <div className="flex flex-col gap-8">
-
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Despesas
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">Despesas</h1>
           <p className="text-sm text-gray-500 mt-1">
             Controle e acompanhe todos os seus gastos
           </p>
@@ -82,7 +96,6 @@ export default function DespesasPage() {
         </div>
 
         <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <h2 className="text-xl font-semibold text-gray-700">
               Histórico de Despesas
@@ -106,7 +119,6 @@ export default function DespesasPage() {
             year={selectedDate.year}
           />
         </div>
-
       </div>
     </Container>
   );

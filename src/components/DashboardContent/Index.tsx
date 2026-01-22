@@ -123,6 +123,7 @@ export function DashboardContent() {
       {/* Lista de transações */}
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm mt-8">
         <TransactionsList
+          exibirAcoes={false}
           month={selectedDate.month}
           year={selectedDate.year}
           onRefresh={handleRefresh}
