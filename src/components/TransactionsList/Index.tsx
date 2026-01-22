@@ -8,17 +8,19 @@ import { toast } from "react-toastify";
 import { ConfirmDialog } from "../ConfirmDialog/Index";
 
 interface TransactionsListProps {
-  type: "income" | "expense" | "investment";
+  type?: "income" | "expense" | "investment" | "all";
   exibirAcoes?: boolean;
   onEdit?: (item: any) => void;
+  onRefresh?: () => void;
   month?: number;
   year?: number;
 }
 
 export function TransactionsList({
-  type,
+  type = "all",
   exibirAcoes = true,
   onEdit,
+  onRefresh,
   month,
   year,
 }: TransactionsListProps) {
@@ -28,7 +30,7 @@ export function TransactionsList({
   const itensPorPagina = 5;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [idParaExcluir, setIdParaExcluir] = useState<string | null>(null);
+  const [transacaoParaExcluir, setTransacaoParaExcluir] = useState<any | null>(null);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -42,11 +44,21 @@ export function TransactionsList({
       const response = await api.get(url);
 
       const filtradosEOrdenados = response
-        .filter((item: any) => item.type?.toUpperCase() === type.toUpperCase())
+        .filter((item: any) => {
+          if (type === "all") return true;
+          return item.type?.toUpperCase() === type.toUpperCase();
+        })
         .sort((a: any, b: any) => {
-          const timeA = new Date(a.createdAt).getTime();
-          const timeB = new Date(b.createdAt).getTime();
-          return timeB - timeA;
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+          if (dateA !== dateB) {
+            return dateB - dateA;
+          }
+
+          const idA = String(a.id);
+          const idB = String(b.id);
+          return idB.localeCompare(idA);
         });
 
       setTodasTransacoes(filtradosEOrdenados);
@@ -62,45 +74,54 @@ export function TransactionsList({
     setPaginaAtual(1);
   }, [loadTransactions]);
 
-  const handleDelete = (id: string) => {
-    setIdParaExcluir(id);
+  const handleDelete = (item: any) => {
+    setTransacaoParaExcluir(item);
     setIsModalOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!idParaExcluir) return;
+  const confirmDelete = async (deleteAll: boolean = false) => {
+    if (!transacaoParaExcluir) return;
 
     try {
-      await api.delete(`/transactions/${idParaExcluir}`);
-      toast.success("Excluído com sucesso!");
-      loadTransactions();
-    } catch (error) {
+      const url = `/transactions/${transacaoParaExcluir.id}${deleteAll ? "?deleteAll=true" : ""}`;
+      await api.delete(url);
+
+      toast.success(
+        deleteAll
+          ? "Todas as parcelas/recorrências foram removidas!"
+          : "Transação excluída com sucesso!",
+      );
+
+      if (onRefresh) {
+        onRefresh();
+      } else {
+        loadTransactions();
+      }
+    } catch (error: any) {
       toast.error("Erro ao excluir transação.");
       console.error(error);
     } finally {
       setIsModalOpen(false);
-      setIdParaExcluir(null);
+      setTransacaoParaExcluir(null);
     }
   };
 
   const totalPaginas = Math.ceil(todasTransacoes.length / itensPorPagina);
   const indiceUltimoItem = paginaAtual * itensPorPagina;
   const indicePrimeiroItem = indiceUltimoItem - itensPorPagina;
-  const listaExibida = todasTransacoes.slice(
-    indicePrimeiroItem,
-    indiceUltimoItem,
-  );
+  const listaExibida = todasTransacoes.slice(indicePrimeiroItem, indiceUltimoItem);
 
   const titulos = {
     income: "Últimas Receitas",
     expense: "Últimas Despesas",
     investment: "Meus Investimentos",
+    all: "Todas as Transações",
   };
 
-  const valorColor = {
-    income: "text-green-600",
-    expense: "text-red-600",
-    investment: "text-[#42B7B2]",
+  const typeConfigs: any = {
+    income: { label: "Receita", color: "text-green-600", bg: "bg-green-50" },
+    expense: { label: "Despesa", color: "text-red-600", bg: "bg-red-50" },
+    investment: { label: "Investimento", color: "text-[#42B7B2]", bg: "bg-teal-50" },
   };
 
   if (loading) {
@@ -117,21 +138,17 @@ export function TransactionsList({
             <span className="text-sm text-gray-500 mr-2">
               Página {paginaAtual} de {totalPaginas}
             </span>
-
             <button
               onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
               disabled={paginaAtual === 1}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"
+              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition cursor-pointer"
             >
               <ChevronsLeft size={20} />
             </button>
-
             <button
-              onClick={() =>
-                setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))
-              }
+              onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))}
               disabled={paginaAtual === totalPaginas}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition"
+              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition cursor-pointer"
             >
               <ChevronsRight size={20} />
             </button>
@@ -144,6 +161,7 @@ export function TransactionsList({
           <thead className="text-xs text-gray-700 uppercase bg-gray-50/60">
             <tr>
               <th className="px-6 py-4">Nome</th>
+              {type === "all" && <th className="px-6 py-4">Tipo</th>}
               <th className="px-6 py-4">Valor</th>
               <th className="px-6 py-4">Data</th>
               <th className="px-6 py-4">Categoria</th>
@@ -152,74 +170,76 @@ export function TransactionsList({
           </thead>
 
           <tbody className="divide-y divide-gray-100">
-            {listaExibida.map((item) => (
-              <tr
-                key={item.id}
-                className="hover:bg-gray-50 transition-colors duration-150"
-              >
-                <td className="px-6 py-4 font-medium text-gray-900">
-                  {item.title || item.name}
-                </td>
+            {listaExibida.map((item) => {
+              const itemType = item.type?.toLowerCase();
+              const config = typeConfigs[itemType] || { color: "text-gray-600", label: itemType };
 
-                <td className={`px-6 py-4 font-bold ${valorColor[type]}`}>
-                  R${" "}
-                  {Number(item.amount).toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                  })}
-                </td>
-
-                <td className="px-6 py-4">
-                  {new Date(item.date).toLocaleDateString("pt-BR", {
-                    timeZone: "UTC",
-                  })}
-                </td>
-
-                <td className="px-6 py-4">
-                  <span
-                    className="inline-flex items-center px-3 py-1 rounded-full text-[11px]
-  font-medium bg-gray-100 text-gray-700 border border-gray-200 uppercase"
-                  >
-                    {item.category}
-                  </span>
-                </td>
-
-                {exibirAcoes && (
-                  <td className="px-6 py-4 text-center space-x-3">
-                    <button
-                      onClick={() => onEdit?.(item)}
-                      title="Editar"
-                      className="text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
-                    >
-                      <SquarePen size={18} />
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      title="Excluir"
-                      className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+              return (
+                <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <td className="px-6 py-4 font-medium text-gray-900">
+                    {item.title || item.name}
                   </td>
-                )}
-              </tr>
-            ))}
+
+                  {type === "all" && (
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${config.bg} ${config.color}`}>
+                        {config.label}
+                      </span>
+                    </td>
+                  )}
+
+                  <td className={`px-6 py-4 font-bold ${type === "all" ? config.color : typeConfigs[type].color}`}>
+                    R$ {Number(item.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    {new Date(item.date).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 border border-gray-200 uppercase">
+                      {item.category}
+                    </span>
+                  </td>
+
+                  {exibirAcoes && (
+                    <td className="px-6 py-4 text-center space-x-3">
+                      <button
+                        onClick={() => onEdit?.(item)}
+                        className="text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
+                      >
+                        <SquarePen size={18} />
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
         {todasTransacoes.length === 0 && (
-          <div className="p-10 text-center text-gray-400">
-            Nenhum registro encontrado.
-          </div>
+          <div className="p-10 text-center text-gray-400">Nenhum registro encontrado.</div>
         )}
       </div>
 
       <ConfirmDialog
         title="Confirmar exclusão"
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setTransacaoParaExcluir(null);
+        }}
         onConfirm={confirmDelete}
         message="Tem certeza que deseja excluir esta transação?"
+        isGroup={!!transacaoParaExcluir?.groupId}
       />
     </div>
   );
