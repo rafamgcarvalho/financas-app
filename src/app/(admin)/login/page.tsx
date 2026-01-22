@@ -6,10 +6,12 @@ import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/src/services/api";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -19,7 +21,6 @@ export default function LoginPage() {
 
     try {
       const data = await api.post("/auth/login", { username, password });
-
       const response = await api.get(`/users/${username}`);
 
       localStorage.setItem("token", data.access_token);
@@ -94,14 +95,23 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Senha
             </label>
-            <input
-              type="password"
-              required
-              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                className="w-full p-3 pr-12 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-teal-600 transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button
@@ -127,33 +137,16 @@ export default function LoginPage() {
       {/* 🎞️ Keyframes */}
       <style jsx global>{`
         @keyframes float1 {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(40px, 30px) scale(1.05);
-          }
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(40px, 30px) scale(1.05); }
         }
-
         @keyframes float2 {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(-30px, -40px) scale(1.06);
-          }
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-30px, -40px) scale(1.06); }
         }
-
         @keyframes float3 {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(-20px, 20px) scale(1.04);
-          }
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-20px, 20px) scale(1.04); }
         }
       `}</style>
     </div>

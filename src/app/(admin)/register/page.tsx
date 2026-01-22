@@ -7,10 +7,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const initialFormState: UserModel = {
     name: "",
@@ -124,15 +126,24 @@ export default function RegisterPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Senha
             </label>
-            <input
-              type="password"
-              required
-              name="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full p-3 pr-12 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-teal-600 transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button
@@ -158,33 +169,16 @@ export default function RegisterPage() {
       {/* 🎞️ Keyframes */}
       <style jsx global>{`
         @keyframes float1 {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(40px, 30px) scale(1.05);
-          }
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(40px, 30px) scale(1.05); }
         }
-
         @keyframes float2 {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(-30px, -40px) scale(1.06);
-          }
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-30px, -40px) scale(1.06); }
         }
-
         @keyframes float3 {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(-20px, 20px) scale(1.04);
-          }
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-20px, 20px) scale(1.04); }
         }
       `}</style>
     </div>
