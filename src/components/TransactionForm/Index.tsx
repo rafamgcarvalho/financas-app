@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { TransactionModel } from "@/src/models/IncomeModel";
 import { api } from "@/src/services/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
@@ -22,22 +21,36 @@ export function TransactionForm({
   initialData,
 }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const placeholders = {
+    name:
+      type === "income"
+        ? "Ex: Salário"
+        : type === "expense"
+        ? "Ex: Aluguel"
+        : "Ex: Investimento",
+    description:
+      type === "income"
+        ? "Origem da receita (opcional)"
+        : "Detalhes da despesa (opcional)",
+  };
 
   const initialFormState = useMemo(
-    (): TransactionModel => ({
+    () => ({
       name: "",
       description: "",
       amount: "",
       transactionDate: "",
       category: categories[0]?.value || "outros",
       recurring: false,
-      type: type,
+      installments: "1",
+      type,
     }),
     [type, categories],
   );
 
-  const [formData, setFormData] = useState<TransactionModel>(initialFormState);
-  const formRef = useRef<HTMLDivElement>(null);
+  const [formData, setFormData] = useState<any>(initialFormState);
 
   useEffect(() => {
     if (initialData) {
@@ -48,37 +61,29 @@ export function TransactionForm({
         transactionDate: initialData.date.split("T")[0],
         category: initialData.category,
         recurring: initialData.isRecurring || false,
-        type: type,
+        installments: initialData.installments?.toString() || "1",
+        type,
       });
 
-      formRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+      formRef.current?.scrollIntoView({ behavior: "smooth" });
     } else {
       setFormData(initialFormState);
     }
-  }, [initialData, type, initialFormState]);
+  }, [initialData, initialFormState, type]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-
-    setFormData((prev) => ({
+    const { checked } = e.target;
+    setFormData((prev: any) => ({
       ...prev,
-      [name]: checked,
+      recurring: checked,
+      installments: checked ? "1" : prev.installments,
     }));
   };
 
@@ -86,16 +91,19 @@ export function TransactionForm({
     e.preventDefault();
 
     const amountNumber = Number(formData.amount);
+    const installmentsNumber = Number(formData.installments);
     const errors = [];
 
     if (!formData.name) errors.push("Nome inválido");
     if (!formData.amount || isNaN(amountNumber) || amountNumber < 0)
       errors.push("Valor inválido");
     if (!formData.transactionDate) errors.push("Data inválida");
+    if (!formData.recurring && installmentsNumber < 1)
+      errors.push("Número de parcelas inválido");
 
-    if (errors.length > 0) {
+    if (errors.length) {
       toast.dismiss();
-      errors.forEach((error) => toast.error(error));
+      errors.forEach((err) => toast.error(err));
       return;
     }
 
@@ -107,26 +115,26 @@ export function TransactionForm({
       const payload = {
         title: formData.name,
         amount: amountNumber,
-        description:
-          formData.description.trim() === "" ? null : formData.description,
+        description: formData.description || null,
         date: safeDate.toISOString(),
         category: formData.category,
         type: type.toUpperCase(),
         isRecurring: formData.recurring,
+        installments: formData.recurring ? 1 : installmentsNumber,
       };
 
       if (initialData?.id) {
         await api.patch(`/transactions/${initialData.id}`, payload);
-        toast.success("Transação salva com sucesso!");
+        toast.success("Transação atualizada!");
       } else {
         await api.post("/transactions", payload);
-        toast.success("Transação salva com sucesso!");
+        toast.success("Transação(ões) criada(s) com sucesso!");
       }
 
       setFormData(initialFormState);
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || "Erro ao salvar");
     } finally {
       setLoading(false);
     }
@@ -135,26 +143,18 @@ export function TransactionForm({
   return (
     <div ref={formRef} className="scroll-mt-24">
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* 🧾 Dados principais */}
+        {/* Nome e Valor */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Nome
             </label>
             <input
-              type="text"
               name="name"
-              placeholder={
-                type === "income"
-                  ? "Ex: Salário Mensal"
-                  : type === "expense"
-                    ? "Ex: Aluguel"
-                    : "Ex: Aporte em Investimento"
-              }
               value={formData.name}
               onChange={handleChange}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
-                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
+              placeholder={placeholders.name}
+              className="w-full rounded-xl border px-4 py-3 text-sm"
             />
           </div>
 
@@ -164,34 +164,32 @@ export function TransactionForm({
             </label>
             <input
               type="number"
-              name="amount"
-              placeholder="0,00"
               step="0.01"
+              name="amount"
               value={formData.amount}
               onChange={handleChange}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
-                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
+              placeholder="0,00"
+              className="w-full rounded-xl border px-4 py-3 text-sm"
             />
           </div>
         </div>
 
-        {/* 📝 Descrição */}
+        {/* Descrição */}
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
             Descrição
           </label>
           <textarea
+            rows={2}
             name="description"
-            rows={3}
-            placeholder="Informações adicionais sobre a transação..."
             value={formData.description}
             onChange={handleChange}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
-              focus:border-[#42B7B2] focus:ring-[#42B7B2]"
+            placeholder={placeholders.description}
+            className="w-full rounded-xl border px-4 py-3 text-sm"
           />
         </div>
 
-        {/* 📅 Meta dados */}
+        {/* Data, Categoria, Recorrência */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
@@ -202,8 +200,7 @@ export function TransactionForm({
               name="transactionDate"
               value={formData.transactionDate}
               onChange={handleChange}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
-                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
+              className="w-full rounded-xl border px-4 py-3 text-sm"
             />
           </div>
 
@@ -215,8 +212,7 @@ export function TransactionForm({
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm
-                focus:border-[#42B7B2] focus:ring-[#42B7B2]"
+              className="w-full rounded-xl border px-4 py-3 text-sm cursor-pointer"
             >
               {categories.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -226,26 +222,47 @@ export function TransactionForm({
             </select>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input
-              type="checkbox"
-              name="recurring"
-              checked={formData.recurring}
-              onChange={handleCheckboxChange}
-              className="h-4 w-4 rounded border-gray-300 text-[#42B7B2] focus:ring-[#42B7B2]"
-            />
-            Transação recorrente
-          </label>
+          {/* Recorrente + Parcelas */}
+          <div className="flex flex-col gap-3">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.recurring}
+                onChange={handleCheckboxChange}
+                className="h-4 w-4 cursor-pointer"
+              />
+              Recorrente (mensal)
+            </label>
+
+            <div
+              className={`transition ${
+                formData.recurring ? "opacity-40" : "opacity-100"
+              }`}
+            >
+              <label className="block text-xs text-gray-500 mb-1">
+                Nº de parcelas
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="48"
+                name="installments"
+                value={formData.installments}
+                onChange={handleChange}
+                disabled={formData.recurring}
+                className="w-24 rounded-lg border px-2 py-1 text-sm disabled:cursor-not-allowed"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* 🔘 Ações */}
-        <div className="flex flex-col md:flex-row gap-4 pt-4">
+        {/* Botões */}
+        <div className="flex gap-4 pt-4">
           {initialData && (
             <button
               type="button"
               onClick={onSuccess}
-              className="flex-1 rounded-xl border border-red-300 bg-red-50 py-3 text-sm
-                font-medium text-red-600 hover:bg-red-100 transition cursor-pointer"
+              className="flex-1 rounded-xl border py-3 text-sm cursor-pointer"
             >
               Cancelar
             </button>
@@ -254,18 +271,9 @@ export function TransactionForm({
           <button
             type="submit"
             disabled={loading}
-            className={`flex-1 rounded-xl py-3 text-sm font-medium text-white transition cursor-pointer
-              ${
-                loading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#42B7B2] hover:bg-teal-600"
-              }`}
+            className="flex-1 rounded-xl py-3 text-sm text-white cursor-pointer bg-[#42B7B2] disabled:opacity-60"
           >
-            {loading
-              ? "Salvando..."
-              : initialData
-                ? "Salvar Alterações"
-                : buttonLabel}
+            {loading ? "Salvando..." : buttonLabel}
           </button>
         </div>
       </form>

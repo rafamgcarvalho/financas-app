@@ -6,4 +6,5 @@ export type TransactionModel = {
     category: string;
     recurring: boolean;
     type: 'income' | 'expense' | 'investment';
+    installments?: string | number;
 }

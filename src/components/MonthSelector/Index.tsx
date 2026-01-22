@@ -6,24 +6,34 @@ import { Calendar } from "lucide-react";
 interface MonthSelectorProps {
   onChange: (month: number, year: number) => void;
   currentValue: string;
+  minDate?: string;
+  maxDate?: string;
 }
 
-// Função para gerar a lista dos últimos 12 meses
-function generateLast12Months() {
+function generateDynamicMonths(minStr?: string, maxStr?: string) {
   const months = [];
   const now = new Date();
 
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  const start = minStr ? new Date(minStr) : new Date(now.getFullYear(), now.getMonth() - 12, 1);
+  const end = maxStr ? new Date(maxStr) : now;
 
+  const startTotal = start.getUTCFullYear() * 12 + start.getUTCMonth();
+  const endTotal = end.getUTCFullYear() * 12 + end.getUTCMonth();
+  const nowTotal = now.getFullYear() * 12 + now.getMonth();
+
+  const limitTotal = Math.max(endTotal, nowTotal);
+
+  for (let i = startTotal; i <= limitTotal; i++) {
+    const year = Math.floor(i / 12);
+    const month = i % 12;
+
+    const value = `${year}-${String(month + 1).padStart(2, "0")}`;
+    
+    const dateForLabel = new Date(year, month, 15);
     const label = new Intl.DateTimeFormat("pt-BR", {
       year: "numeric",
       month: "long",
-    }).format(date);
-
-    const value = `${date.getFullYear()}-${String(
-      date.getMonth() + 1
-    ).padStart(2, "0")}`;
+    }).format(dateForLabel);
 
     months.push({
       value,
@@ -31,18 +41,21 @@ function generateLast12Months() {
     });
   }
 
-  return months.reverse();
+  return months;
 }
 
 export function MonthSelector({
   onChange,
   currentValue,
+  minDate,
+  maxDate,
 }: MonthSelectorProps) {
-  const months = useMemo(() => generateLast12Months(), []);
+  const months = useMemo(
+    () => generateDynamicMonths(minDate, maxDate),
+    [minDate, maxDate],
+  );
 
-  const handleChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     const [year, month] = value.split("-").map(Number);
     onChange(month, year);
@@ -56,15 +69,11 @@ export function MonthSelector({
         id="month-select"
         value={currentValue}
         onChange={handleChange}
-        className="
-          bg-transparent text-sm font-medium text-gray-700
-          focus:outline-none
-          cursor-pointer
-        "
+        className="bg-transparent text-sm font-medium text-gray-700 focus:outline-none cursor-pointer"
       >
-        {months.map((month) => (
-          <option key={month.value} value={month.value}>
-            {month.label}
+        {months.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
           </option>
         ))}
       </select>
