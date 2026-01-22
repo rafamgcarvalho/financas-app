@@ -9,6 +9,9 @@ import { SummaryCard } from "../SummaryCard/Index";
 import { SpinLoader } from "../SpinLoader/Index";
 import UserDropdown from "../UserDropdown/Index";
 import { TransactionsList } from "../TransactionsList/Index";
+import { FinancialChart } from "../FinancialChart/Index";
+import { MonthlyComparisonChart } from "../MonthlyComparisonChart/Index";
+import { CategoryPieChart } from "../CategoryPieChart/Index";
 
 export function DashboardContent() {
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
@@ -118,6 +121,20 @@ export function DashboardContent() {
           type="investment"
         />
         <SummaryCard title="Balanço" amount={balance} type="balance" />
+      </div>
+
+      {/* <div className="grid grid-cols-1 gap-6 mb-8">
+        <FinancialChart />
+      </div> */}
+
+      {/* 2. Seção de Gráficos em Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MonthlyComparisonChart month={selectedDate.month} year={selectedDate.year} />
+        <CategoryPieChart month={selectedDate.month} year={selectedDate.year} />
+
+        <div className="lg:col-span-2">
+          <FinancialChart />
+        </div>
       </div>
 
       {/* Lista de transações */}
