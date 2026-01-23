@@ -1,6 +1,6 @@
 "use client";
 
-import { TransactionModel } from "@/src/models/IncomeModel";
+import { TransactionModel } from "@/src/models/TransactionModel";
 import { Container } from "../Container/Index";
 import { MonthSelector } from "../MonthSelector/Index";
 import { useCallback, useEffect, useState } from "react";
