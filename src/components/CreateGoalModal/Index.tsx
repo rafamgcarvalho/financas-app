@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { CreateGoalForm } from "@/src/models/GoalModel";
-import { useState } from "react";
+import { CreateGoalForm, GoalModel } from "@/src/models/GoalModel";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Container } from "../Container/Index";
 import { SpinLoader } from "../SpinLoader/Index";
@@ -10,10 +10,11 @@ import { api } from "@/src/services/api";
 
 type CreateGoalModalProps = {
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (updatedGoal?: GoalModel) => void;
+  initialData?: GoalModel;
 };
 
-export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
+export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalModalProps) {
   const [loading, setLoading] = useState(false);
 
   const initialFormState: CreateGoalForm = {
@@ -24,15 +25,35 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
     targetDate: "",
     type: "" as any,
     priority: "" as any,
-    status: "ACTIVE",
+    status: "ACTIVE" as "ACTIVE" | "PAUSED" | "COMPLETED",
   };
 
   const [formData, setFormData] = useState<CreateGoalForm>(initialFormState);
 
+  const formatDateForInput = (dateStr?: string | Date) => {
+    if (!dateStr) return "";
+    return new Date(dateStr).toISOString().split("T")[0];
+  };
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title,
+        description: initialData.description || "",
+        targetValue: initialData.targetValue as any,
+        startDate: formatDateForInput(initialData.startDate),
+        targetDate: initialData.targetDate ? formatDateForInput(initialData.targetDate) : "",
+        type: initialData.type,
+        priority: initialData.priority,
+        status: initialData.status,
+      });
+    } else {
+      setFormData(initialFormState);
+    }
+  }, [initialData]);
+
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({ ...prev, [name]: value }));
@@ -41,13 +62,11 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const targetAmount = Number(formData.targetValue);
+    // Validações básicas
     const errors = [];
-
     if (!formData.title) errors.push("Título inválido");
     if (!formData.targetValue) errors.push("Valor inválido");
-    if (!formData.type) errors.push("Tipo inválido");
-    if (!formData.startDate) errors.push("Data inválida");
+    if (!formData.startDate) errors.push("Data de início inválida");
     if (!formData.priority) errors.push("Prioridade inválida");
 
     if (errors.length) {
@@ -59,30 +78,40 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
     setLoading(true);
 
     try {
-      const safeStartDate = new Date(`${formData.startDate}T12:00:00`);
-      const safeTargetDate = formData.targetDate 
-        ? new Date(`${formData.targetDate}T12:00:00`).toISOString() 
-        : undefined;
-
       const payload = {
-        title: formData.title,
-        description: formData.description,
-        targetValue: targetAmount,
-        startDate: safeStartDate.toISOString(),
-        targetDate: safeTargetDate,
-        type: formData.type,
-        priority: formData.priority,
-        status: "ACTIVE",
+        ...formData,
+        targetValue: Number(formData.targetValue),
+        startDate: new Date(`${formData.startDate}T12:00:00`).toISOString(),
+        targetDate: formData.targetDate
+          ? new Date(`${formData.targetDate}T12:00:00`).toISOString()
+          : null,
+      };
+
+      let response;
+
+      if (initialData?.id) {
+        response = await api.patch(`/goals/${initialData.id}`, payload);
+        toast.success("Meta atualizada com sucesso!");
+      } else {
+        response = await api.post("/goals", payload);
+        toast.success("Meta criada com sucesso!");
       }
 
-      await api.post("/goals", payload);
+      if (onSuccess) {
+        const optimisticData = {
+            ...initialData,
+            ...payload,
+            ...(response.data || {})
+        };
 
-      setFormData(initialFormState);
+        await onSuccess(optimisticData as GoalModel);
+      } else {
+        onClose();
+      }
 
-      if (onSuccess) onSuccess();
-      onClose();
     } catch (err) {
-      console.error("Erro ao tentar criar meta", err);
+      console.error("Erro ao salvar meta", err);
+      toast.error("Ocorreu um erro ao salvar a meta.");
     } finally {
       setLoading(false);
     }
@@ -97,39 +126,32 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <form
         onSubmit={handleSubmit}
-        className="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-100"
+        className="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-100 flex flex-col"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-800">
-            Criar nova meta
+            {initialData ? "Editar meta" : "Criar nova meta"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition cursor-pointer"
+            className="text-gray-400 hover:text-gray-600 transition cursor-pointer text-xl"
           >
             ✕
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          {/* Nome */}
+        <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto text-left">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Nome da meta
-            </label>
+            <label className="text-sm font-medium text-gray-700">Nome da meta</label>
             <input
               type="text"
               name="title"
@@ -141,11 +163,8 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
             />
           </div>
 
-          {/* Descrição */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Descrição (opcional)
-            </label>
+            <label className="text-sm font-medium text-gray-700">Descrição (opcional)</label>
             <textarea
               name="description"
               value={formData.description}
@@ -156,16 +175,14 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
             />
           </div>
 
-          {/* Valor e Tipo */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">
-                Valor total
-              </label>
+              <label className="text-sm font-medium text-gray-700">Valor total</label>
               <input
                 type="number"
                 name="targetValue"
                 required
+                step="0.01"
                 value={formData.targetValue}
                 onChange={handleChange}
                 placeholder="0,00"
@@ -174,9 +191,7 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">
-                Tipo da meta
-              </label>
+              <label className="text-sm font-medium text-gray-700">Tipo da meta</label>
               <select
                 name="type"
                 required
@@ -184,9 +199,7 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
                 onChange={handleChange}
                 className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="" disabled>
-                  Selecione
-                </option>
+                <option value="" disabled>Selecione</option>
                 <option value="SHORT">Curto prazo</option>
                 <option value="MEDIUM">Médio prazo</option>
                 <option value="LONG">Longo prazo</option>
@@ -194,12 +207,9 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
             </div>
           </div>
 
-          {/* Datas */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">
-                Início
-              </label>
+              <label className="text-sm font-medium text-gray-700">Início</label>
               <input
                 type="date"
                 name="startDate"
@@ -211,9 +221,7 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">
-                Data alvo
-              </label>
+              <label className="text-sm font-medium text-gray-700">Data alvo</label>
               <input
                 type="date"
                 name="targetDate"
@@ -224,11 +232,8 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
             </div>
           </div>
 
-          {/* Campo de Prioridade */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Prioridade
-            </label>
+            <label className="text-sm font-medium text-gray-700">Prioridade</label>
             <select
               name="priority"
               required
@@ -236,9 +241,7 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
               onChange={handleChange}
               className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="" disabled>
-                Selecione a urgência
-              </option>
+              <option value="" disabled>Selecione a urgência</option>
               <option value="DESIRABLE">Baixa</option>
               <option value="IMPORTANT">Média</option>
               <option value="ESSENTIAL">Essencial / Alta</option>
@@ -246,8 +249,7 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
           <button
             type="button"
             onClick={onClose}
@@ -257,9 +259,9 @@ export function CreateGoalModal({ onClose, onSuccess }: CreateGoalModalProps) {
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition cursor-pointer"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition cursor-pointer shadow-md shadow-blue-100"
           >
-            Criar meta
+            {initialData ? "Salvar alterações" : "Criar meta"}
           </button>
         </div>
       </form>

@@ -15,11 +15,24 @@ export default function InvestimentosPage() {
   const [selectedGoal, setSelectedGoal] = useState<GoalModel | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchGoals = useCallback(async () => {
+  const fetchGoals = useCallback(async (isBackgroundUpdate = false) => {
     try {
-      setLoading(true);
-      const data = await api.get("/goals");
-      setGoals(data);
+      if (!isBackgroundUpdate) {
+        setLoading(true);
+      }
+      
+      const response = await api.get("/goals");
+      const newData = response.data || response; 
+
+      setGoals(newData);
+
+      setSelectedGoal((prevSelected) => {
+        if (!prevSelected) return null;
+        const updatedGoal = newData.find((g: GoalModel) => g.id === prevSelected.id);
+        
+        return updatedGoal || prevSelected; 
+      });
+
     } catch (error) {
       console.error("Erro ao carregar metas", error);
     } finally {
@@ -42,7 +55,6 @@ export default function InvestimentosPage() {
   return (
     <Container>
       <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
-        {/* Header da seção */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-semibold text-gray-800">Metas</h2>
@@ -61,7 +73,6 @@ export default function InvestimentosPage() {
           </button>
         </div>
 
-        {/* Lista de metas */}
         {goals.length > 0 ? (
           <div className="flex gap-4 overflow-x-auto pb-2">
             {goals.map((goal) => (
@@ -76,7 +87,6 @@ export default function InvestimentosPage() {
             ))}
           </div>
         ) : (
-          /* Estado vazio */
           <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500">
             <p className="mb-4">
               Você ainda não possui nenhuma meta cadastrada
@@ -88,7 +98,7 @@ export default function InvestimentosPage() {
       {isCreateGoalOpen && (
         <CreateGoalModal
           onClose={() => setIsCreateGoalOpen(false)}
-          onSuccess={fetchGoals}
+          onSuccess={() => fetchGoals(true)} 
         />
       )}
 
@@ -96,7 +106,7 @@ export default function InvestimentosPage() {
         <GoalDetailsModal
           goal={selectedGoal}
           onClose={() => setSelectedGoal(null)}
-          onRefresh={fetchGoals}
+          onRefresh={() => fetchGoals(true)} 
         />
       )}
     </Container>
