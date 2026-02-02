@@ -19,6 +19,6 @@ export type CreateGoalForm = {
   targetDate?: string;
   type: "SHORT" | "MEDIUM" | "LONG";
   priority: "LOW" | "MEDIUM" | "ESSENTIAL";
-  status: "ACTIVE";
+  status: "ACTIVE" | "PAUSED" | "COMPLETED";
 };
 
