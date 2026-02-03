@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -105,8 +106,8 @@ export function GoalDetailsModal({
           className={`px-10 py-6 border-b flex items-center justify-between
           ${
             isCompleted
-              ? "bg-gradient-to-r from-green-50 to-white"
-              : "bg-gradient-to-r from-blue-50 to-white"
+              ? "bg-linear-to-r from-green-50 to-white"
+              : "bg-linear-to-r from-blue-50 to-white"
           }`}
         >
           <div>
@@ -174,8 +175,8 @@ export function GoalDetailsModal({
                     className={`rounded-3xl p-8 border shadow-sm
                     ${
                       isCompleted
-                        ? "bg-gradient-to-br from-green-50 to-white border-green-200"
-                        : "bg-gradient-to-br from-blue-50 to-white border-blue-200"
+                        ? "bg-linear-to-br from-green-50 to-white border-green-200"
+                        : "bg-linear-to-br from-blue-50 to-white border-blue-200"
                     }`}
                   >
                     <div className="flex justify-between items-end mb-5">
@@ -266,7 +267,7 @@ export function GoalDetailsModal({
                   </button>
                 </div>
 
-                <div className="flex-1 rounded-3xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-5 shadow-inner overflow-hidden">
+                <div className="flex-1 rounded-3xl border border-gray-200 bg-linear-to-b from-gray-50 to-white p-5 shadow-inner overflow-hidden">
                   <TransactionsList
                     key={transactionsKey}
                     type="investment"
