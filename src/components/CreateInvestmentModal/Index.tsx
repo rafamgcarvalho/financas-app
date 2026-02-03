@@ -43,7 +43,6 @@ export function CreateInvestmentModal({
 
       await api.post("/transactions", payload);
 
-      // toast.success("Aporte realizado com sucesso!");
       onSuccess();
     } catch (error: any) {
       console.error("Erro detalhado:", error.message);
@@ -54,26 +53,35 @@ export function CreateInvestmentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-linear-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-md"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_rgba(0,0,0,0.35)] border border-gray-200/70">
-        {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 bg-linear-to-r from-blue-600 to-blue-700">
+      {/* Modal Container - Ajustado max-w e adicionado max-h para telas pequenas */}
+      <div className="
+        relative w-full max-w-md 
+        max-h-[95vh] flex flex-col
+        overflow-hidden rounded-3xl 
+        bg-white 
+        shadow-2xl
+        border border-gray-200/70
+        animate-in fade-in zoom-in-95 duration-200
+      ">
+        
+        {/* Header - Padding reduzido levemente */}
+        <div className="flex items-center justify-between px-6 py-4 bg-linear-to-r from-blue-600 to-blue-700 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white/20 text-white rounded-xl">
-              <DollarSign size={20} />
+            <div className="p-2 bg-white/20 text-white rounded-lg">
+              <DollarSign size={18} />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-white">
+              <h3 className="text-base font-bold text-white leading-tight">
                 Novo Aporte
               </h3>
-              <p className="text-[11px] text-blue-100 uppercase font-bold tracking-widest">
+              <p className="text-[10px] text-blue-100 uppercase font-bold tracking-widest opacity-90">
                 {goalTitle}
               </p>
             </div>
@@ -81,102 +89,105 @@ export function CreateInvestmentModal({
 
           <button
             onClick={onClose}
-            className="text-white/70 hover:text-white transition-colors cursor-pointer"
+            className="text-white/70 hover:text-white transition-colors cursor-pointer p-1"
           >
-            <X size={22} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="p-7 space-y-6">
-          {/* Valor */}
-          <div>
-            <label className="block text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1 tracking-wider">
-              Valor do Aporte
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
-                R$
+        <div className="overflow-y-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Valor */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1 tracking-wider">
+                  Valor
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">
+                    R$
+                  </span>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:bg-white transition-all font-bold text-gray-900 text-base"
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+
+              {/* Data */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1 tracking-wider">
+                  Data
+                </label>
+                <div className="relative">
+                  <Calendar
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={16}
+                  />
+                  <input
+                    required
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 transition-all text-gray-700 text-sm font-medium"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Observação */}
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1 tracking-wider">
+                Observação <span className="text-gray-300 font-normal normal-case">(Opcional)</span>
+              </label>
+              <div className="relative">
+                <TextQuote
+                  className="absolute left-3 top-3 text-gray-400"
+                  size={16}
+                />
+                <textarea
+                  placeholder="Ex: Reserva de emergência"
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 resize-none text-sm text-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* Categoria Fixa */}
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-blue-50/80 rounded-xl border border-blue-100/50">
+              <Tag size={14} className="text-blue-500" />
+              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                Categoria: Investimento
               </span>
-              <input
-                required
-                type="number"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/30 focus:bg-white transition-all font-extrabold text-gray-900 text-lg"
-                placeholder="0,00"
-              />
             </div>
-          </div>
 
-          {/* Data */}
-          <div>
-            <label className="block text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1 tracking-wider">
-              Data
-            </label>
-            <div className="relative">
-              <Calendar
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={18}
-              />
-              <input
-                required
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/30 transition-all text-gray-700"
-              />
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg hover:brightness-110 disabled:opacity-60 transition-all cursor-pointer text-sm"
+              >
+                {loading ? "Processando..." : "Confirmar Aporte"}
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-xs font-bold text-gray-400 hover:text-gray-600 py-2 cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
             </div>
-          </div>
-
-          {/* Observação */}
-          <div>
-            <label className="block text-[11px] font-bold text-gray-500 uppercase mb-2 ml-1 tracking-wider">
-              Observação
-            </label>
-            <div className="relative">
-              <TextQuote
-                className="absolute left-4 top-4 text-gray-400"
-                size={18}
-              />
-              <textarea
-                placeholder="Ex: Reserva de emergência"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/30 resize-none text-sm text-gray-700"
-              />
-            </div>
-          </div>
-
-          {/* Categoria */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 rounded-2xl border border-blue-100">
-            <Tag size={14} className="text-blue-500" />
-            <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-              Categoria automática: Investimento
-            </span>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col gap-3 pt-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-extrabold py-4 rounded-2xl shadow-lg hover:brightness-110 disabled:opacity-60 transition-all cursor-pointer"
-            >
-              {loading ? "Processando..." : "Confirmar Aporte"}
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-sm font-bold text-gray-400 hover:text-gray-600 py-2 cursor-pointer"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
