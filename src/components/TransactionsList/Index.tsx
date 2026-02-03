@@ -14,6 +14,9 @@ interface TransactionsListProps {
   onRefresh?: () => void;
   month?: number;
   year?: number;
+  // NOVAS PROPS
+  goalId?: string; 
+  variant?: "default" | "minimal";
 }
 
 export function TransactionsList({
@@ -23,6 +26,8 @@ export function TransactionsList({
   onRefresh,
   month,
   year,
+  goalId,
+  variant = "default",
 }: TransactionsListProps) {
   const [todasTransacoes, setTodasTransacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,29 +41,35 @@ export function TransactionsList({
     try {
       setLoading(true);
 
-      let url = "/transactions";
+      const params = new URLSearchParams();
       if (month && year) {
-        url += `?month=${month}&year=${year}`;
+        params.append("month", String(month));
+        params.append("year", String(year));
       }
+      if (goalId) {
+        params.append("goalId", goalId);
+      }
+
+      const queryString = params.toString();
+      const url = `/transactions${queryString ? `?${queryString}` : ""}`;
 
       const response = await api.get(url);
 
       const filtradosEOrdenados = response
         .filter((item: any) => {
-          if (type === "all") return true;
-          return item.type?.toUpperCase() === type.toUpperCase();
+          if (type !== "all" && item.type?.toUpperCase() !== type.toUpperCase()) {
+            return false;
+          }
+          if (goalId && item.goalId !== goalId) {
+            return false;
+          }
+          return true;
         })
         .sort((a: any, b: any) => {
           const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-
-          if (dateA !== dateB) {
-            return dateB - dateA;
-          }
-
-          const idA = String(a.id);
-          const idB = String(b.id);
-          return idB.localeCompare(idA);
+          if (dateA !== dateB) return dateB - dateA;
+          return String(b.id).localeCompare(String(a.id));
         });
 
       setTodasTransacoes(filtradosEOrdenados);
@@ -67,7 +78,7 @@ export function TransactionsList({
     } finally {
       setLoading(false);
     }
-  }, [type, month, year]);
+  }, [type, month, year, goalId]);
 
   useEffect(() => {
     loadTransactions();
@@ -86,17 +97,13 @@ export function TransactionsList({
       const url = `/transactions/${transacaoParaExcluir.id}${deleteAll ? "?deleteAll=true" : ""}`;
       await api.delete(url);
 
-      toast.success(
-        deleteAll
-          ? "Todas as parcelas/recorrências foram removidas!"
-          : "Transação excluída com sucesso!",
-      );
+      toast.success(deleteAll ? "Recorrências removidas!" : "Transação excluída!");
 
       if (onRefresh) {
         onRefresh();
-      } else {
-        loadTransactions();
       }
+      loadTransactions();
+      
     } catch (error: any) {
       toast.error("Erro ao excluir transação.");
       console.error(error);
@@ -124,98 +131,125 @@ export function TransactionsList({
     investment: { label: "Investimento", color: "text-[#42B7B2]", bg: "bg-teal-50" },
   };
 
+  const containerClasses = variant === "default" 
+    ? "mt-8 bg-white rounded-lg border border-gray-100 shadow-sm" 
+    : "w-full bg-transparent";
+
+  const headerClasses = variant === "default"
+    ? "p-4 flex justify-between items-center border-b border-gray-50"
+    : "pb-4 flex justify-end items-center";
+
   if (loading) {
-    return <p className="p-4 text-gray-500 animate-pulse">Carregando...</p>;
+    return (
+      <div className="p-8 text-center space-y-3 animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="mt-8 bg-white rounded-lg border border-gray-100 shadow-sm">
-      <div className="p-4 flex justify-between items-center border-b border-gray-50">
-        <h3 className="text-lg font-bold text-gray-700">{titulos[type]}</h3>
+    <div className={containerClasses}>
+      {/* Header e Paginação */}
+      {(variant === "default" || totalPaginas > 1) && (
+        <div className={headerClasses}>
+          {variant === "default" && (
+            <h3 className="text-lg font-bold text-gray-700">{titulos[type]}</h3>
+          )}
 
-        {totalPaginas > 1 && (
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500 mr-2">
-              Página {paginaAtual} de {totalPaginas}
-            </span>
-            <button
-              onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
-              disabled={paginaAtual === 1}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition cursor-pointer"
-            >
-              <ChevronsLeft size={20} />
-            </button>
-            <button
-              onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))}
-              disabled={paginaAtual === totalPaginas}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 transition cursor-pointer"
-            >
-              <ChevronsRight size={20} />
-            </button>
-          </div>
-        )}
-      </div>
+          {totalPaginas > 1 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-400 mr-2">
+                {paginaAtual}/{totalPaginas}
+              </span>
+              <button
+                onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
+                disabled={paginaAtual === 1}
+                className="p-1 rounded hover:bg-gray-200/50 disabled:opacity-30 transition cursor-pointer"
+              >
+                <ChevronsLeft size={16} />
+              </button>
+              <button
+                onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas))}
+                disabled={paginaAtual === totalPaginas}
+                className="p-1 rounded hover:bg-gray-200/50 disabled:opacity-30 transition cursor-pointer"
+              >
+                <ChevronsRight size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* Tabela */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-gray-500">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50/60">
-            <tr>
-              <th className="px-6 py-4">Nome</th>
-              {type === "all" && <th className="px-6 py-4">Tipo</th>}
-              <th className="px-6 py-4">Valor</th>
-              <th className="px-6 py-4">Data</th>
-              <th className="px-6 py-4">Categoria</th>
-              {exibirAcoes && <th className="px-6 py-4 text-center">Ações</th>}
-            </tr>
-          </thead>
+          {variant === "default" && (
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50/60">
+              <tr>
+                <th className="px-6 py-4">Nome</th>
+                {type === "all" && <th className="px-6 py-4">Tipo</th>}
+                <th className="px-6 py-4">Valor</th>
+                <th className="px-6 py-4">Data</th>
+                <th className="px-6 py-4">Categoria</th>
+                {exibirAcoes && <th className="px-6 py-4 text-center">Ações</th>}
+              </tr>
+            </thead>
+          )}
 
           <tbody className="divide-y divide-gray-100">
             {listaExibida.map((item) => {
               const itemType = item.type?.toLowerCase();
               const config = typeConfigs[itemType] || { color: "text-gray-600", label: itemType };
 
+              const rowClass = variant === "minimal" 
+                ? "bg-white mb-2 rounded-xl shadow-sm border border-gray-100 block sm:table-row" 
+                : "hover:bg-gray-50 transition-colors duration-150";
+
               return (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
-                  <td className="px-6 py-4 font-medium text-gray-900">
+                <tr key={item.id} className={rowClass}>
+                  <td className="px-4 py-3 font-medium text-gray-900">
                     {item.title || item.name}
                   </td>
 
                   {type === "all" && (
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${config.bg} ${config.color}`}>
                         {config.label}
                       </span>
                     </td>
                   )}
 
-                  <td className={`px-6 py-4 font-bold ${type === "all" ? config.color : typeConfigs[type].color}`}>
+                  <td className={`px-4 py-3 font-bold ${type === "all" ? config.color : typeConfigs[type].color}`}>
                     R$ {Number(item.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3 text-xs text-gray-400">
                     {new Date(item.date).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
                   </td>
-
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 border border-gray-200 uppercase">
-                      {item.category}
-                    </span>
+                  
+                  <td className="px-4 py-3">
+                     <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        {item.category}
+                     </span>
                   </td>
 
                   {exibirAcoes && (
-                    <td className="px-6 py-4 text-center space-x-3">
+                    <td className="px-4 py-3 text-center space-x-2">
                       <button
                         onClick={() => onEdit?.(item)}
-                        className="text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
+                        className="text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
+                        title="Editar"
                       >
-                        <SquarePen size={18} />
+                        <SquarePen size={16} />
                       </button>
 
                       <button
                         onClick={() => handleDelete(item)}
-                        className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+                        className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                         title="Excluir"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   )}
@@ -226,7 +260,15 @@ export function TransactionsList({
         </table>
 
         {todasTransacoes.length === 0 && (
-          <div className="p-10 text-center text-gray-400">Nenhum registro encontrado.</div>
+          <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-300">
+                {/* Ícone condicional */}
+                {type === 'investment' ? <span className="font-bold text-xl">$</span> : <span className="font-bold text-xl">?</span>}
+            </div>
+            <p className="text-gray-400 text-xs italic px-10">
+              Nenhuma transação encontrada.
+            </p>
+          </div>
         )}
       </div>
 
@@ -238,7 +280,7 @@ export function TransactionsList({
           setTransacaoParaExcluir(null);
         }}
         onConfirm={confirmDelete}
-        message="Tem certeza que deseja excluir esta transação?"
+        message="Tem certeza que deseja excluir esta transação? Isso afetará o saldo da sua meta."
         isGroup={!!transacaoParaExcluir?.groupId}
       />
     </div>
