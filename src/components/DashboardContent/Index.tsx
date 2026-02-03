@@ -78,7 +78,11 @@ export function DashboardContent() {
     .filter((t) => t.type?.toLowerCase() === "expense")
     .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
-  const balance = totalIncomes - totalExpenses;
+  const totalInvestments = transactions
+    .filter((t) => t.type?.toLowerCase() === "investment")
+    .reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+  const balance = totalIncomes - (totalExpenses + totalInvestments);
 
   const dateValue = `${selectedDate.year}-${String(selectedDate.month).padStart(2, "0")}`;
 
@@ -117,19 +121,18 @@ export function DashboardContent() {
         />
         <SummaryCard
           title="Investimentos Totais"
-          amount={0}
+          amount={totalInvestments}
           type="investment"
         />
         <SummaryCard title="Balanço" amount={balance} type="balance" />
       </div>
 
-      {/* <div className="grid grid-cols-1 gap-6 mb-8">
-        <FinancialChart />
-      </div> */}
-
       {/* 2. Seção de Gráficos em Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MonthlyComparisonChart month={selectedDate.month} year={selectedDate.year} />
+        <MonthlyComparisonChart
+          month={selectedDate.month}
+          year={selectedDate.year}
+        />
         <CategoryPieChart month={selectedDate.month} year={selectedDate.year} />
 
         <div className="lg:col-span-2">

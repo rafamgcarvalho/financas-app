@@ -96,18 +96,17 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
         response = await api.post("/goals", payload);
         toast.success("Meta criada com sucesso!");
       }
-
+      
       if (onSuccess) {
         const optimisticData = {
             ...initialData,
             ...payload,
             ...(response.data || {})
         };
-
         await onSuccess(optimisticData as GoalModel);
-      } else {
-        onClose();
       }
+
+      onClose();
 
     } catch (err) {
       console.error("Erro ao salvar meta", err);
