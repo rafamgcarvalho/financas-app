@@ -14,7 +14,6 @@ interface TransactionsListProps {
   onRefresh?: () => void;
   month?: number;
   year?: number;
-  // NOVAS PROPS
   goalId?: string; 
   variant?: "default" | "minimal";
 }
@@ -96,14 +95,9 @@ export function TransactionsList({
     try {
       const url = `/transactions/${transacaoParaExcluir.id}${deleteAll ? "?deleteAll=true" : ""}`;
       await api.delete(url);
-
       toast.success(deleteAll ? "Recorrências removidas!" : "Transação excluída!");
-
-      if (onRefresh) {
-        onRefresh();
-      }
+      if (onRefresh) onRefresh();
       loadTransactions();
-      
     } catch (error: any) {
       toast.error("Erro ao excluir transação.");
       console.error(error);
@@ -133,7 +127,7 @@ export function TransactionsList({
 
   const containerClasses = variant === "default" 
     ? "mt-8 bg-white rounded-lg border border-gray-100 shadow-sm" 
-    : "w-full bg-transparent";
+    : "w-full bg-transparent"; // Isso já garante que o container da tabela seja transparente
 
   const headerClasses = variant === "default"
     ? "p-4 flex justify-between items-center border-b border-gray-50"
@@ -150,13 +144,11 @@ export function TransactionsList({
 
   return (
     <div className={containerClasses}>
-      {/* Header e Paginação */}
       {(variant === "default" || totalPaginas > 1) && (
         <div className={headerClasses}>
           {variant === "default" && (
             <h3 className="text-lg font-bold text-gray-700">{titulos[type]}</h3>
           )}
-
           {totalPaginas > 1 && (
             <div className="flex items-center space-x-2">
               <span className="text-xs text-gray-400 mr-2">
@@ -181,7 +173,6 @@ export function TransactionsList({
         </div>
       )}
 
-      {/* Tabela */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-gray-500">
           {variant === "default" && (
@@ -197,14 +188,29 @@ export function TransactionsList({
             </thead>
           )}
 
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-200/50">
             {listaExibida.map((item) => {
               const itemType = item.type?.toLowerCase();
               const config = typeConfigs[itemType] || { color: "text-gray-600", label: itemType };
 
-              const rowClass = variant === "minimal" 
-                ? "bg-white mb-2 rounded-xl shadow-sm border border-gray-100 block sm:table-row" 
-                : "hover:bg-gray-50 transition-colors duration-150";
+              // -------------------------------------------------------------
+              // AQUI ESTÁ A MÁGICA
+              // -------------------------------------------------------------
+              // Verificamos se é minimal E se é investimento.
+              const isInvestmentContext = variant === "minimal" && type === "investment";
+
+              const rowClass = isInvestmentContext
+                // SE FOR INVESTIMENTO NO MODAL:
+                // bg-transparent: para mostrar o fundo cinza do modal
+                // border-b border-gray-200/50: apenas uma linha fina separando
+                ? "bg-transparent border-b border-gray-200/50 last:border-0 block sm:table-row"
+                
+                // CASO CONTRÁRIO (Comportamento antigo):
+                : (variant === "minimal" 
+                    // Card branco flutuante (para outras listas minimalistas)
+                    ? "bg-white mb-2 rounded-xl shadow-sm border border-gray-100 block sm:table-row" 
+                    // Tabela padrão
+                    : "hover:bg-gray-50 transition-colors duration-150");
 
               return (
                 <tr key={item.id} className={rowClass}>
@@ -229,9 +235,10 @@ export function TransactionsList({
                   </td>
                   
                   <td className="px-4 py-3">
-                     <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                      {/* Ajustei o fundo da pílula para ficar semi-transparente também */}
+                      <span className="text-[10px] bg-gray-200/50 text-gray-600 px-2 py-0.5 rounded-full uppercase tracking-wide">
                         {item.category}
-                     </span>
+                      </span>
                   </td>
 
                   {exibirAcoes && (
@@ -261,12 +268,11 @@ export function TransactionsList({
 
         {todasTransacoes.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-300">
-                {/* Ícone condicional */}
+            <div className="w-12 h-12 bg-gray-100/50 rounded-full flex items-center justify-center text-gray-400">
                 {type === 'investment' ? <span className="font-bold text-xl">$</span> : <span className="font-bold text-xl">?</span>}
             </div>
-            <p className="text-gray-400 text-xs italic px-10">
-              Nenhuma transação encontrada.
+            <p className="text-gray-500 text-xs italic px-10">
+              Nenhum aporte encontrado.
             </p>
           </div>
         )}
@@ -280,7 +286,7 @@ export function TransactionsList({
           setTransacaoParaExcluir(null);
         }}
         onConfirm={confirmDelete}
-        message="Tem certeza que deseja excluir esta transação? Isso afetará o saldo da sua meta."
+        message="Tem certeza que deseja excluir?"
         isGroup={!!transacaoParaExcluir?.groupId}
       />
     </div>

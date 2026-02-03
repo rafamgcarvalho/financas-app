@@ -43,7 +43,7 @@ export function CreateInvestmentModal({
 
       await api.post("/transactions", payload);
 
-      toast.success("Aporte realizado com sucesso!");
+      // toast.success("Aporte realizado com sucesso!");
       onSuccess();
     } catch (error: any) {
       console.error("Erro detalhado:", error.message);
