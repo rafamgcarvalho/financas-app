@@ -31,7 +31,7 @@ export function GoalDetailsModal({
   onRefresh,
 }: GoalDetailsModalProps) {
   const [view, setView] = useState<"DETAILS" | "EDIT" | "ADD_INVESTMENT">(
-    "DETAILS",
+    "DETAILS"
   );
 
   const [currentGoal, setCurrentGoal] = useState<GoalModel>(initialGoal);
@@ -49,6 +49,16 @@ export function GoalDetailsModal({
   const invested = Number(currentGoal.currentValue);
   const progress = total > 0 ? Math.min((invested / total) * 100, 100) : 0;
   const remaining = Math.max(total - invested, 0);
+
+  const isCompleted = currentGoal.status === "COMPLETED";
+
+  const statusMap = {
+    ACTIVE: { label: "Ativa", color: "blue" },
+    PAUSED: { label: "Pausada", color: "yellow" },
+    COMPLETED: { label: "Concluída", color: "green" },
+  };
+
+  const status = statusMap[currentGoal.status];
 
   const formatCurrency = (value: number) =>
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -73,7 +83,6 @@ export function GoalDetailsModal({
       onClose();
       onRefresh?.();
     } catch (err) {
-      console.error(err);
       toast.error("Erro ao excluir meta.");
     }
   };
@@ -85,37 +94,39 @@ export function GoalDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div
-        className="
-          relative z-10
-          w-full max-w-7xl
-          max-h-[90vh]
-          overflow-hidden
-          rounded-3xl
-          bg-white
-          border border-gray-200/60
-          shadow-[0_20px_60px_rgba(0,0,0,0.15)]
-          flex flex-col
-        "
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-10 py-6 border-b bg-gray-50/70">
+      <div className="relative z-10 w-full max-w-7xl max-h-[90vh] overflow-hidden rounded-3xl bg-white border border-gray-200/70 shadow-[0_30px_80px_rgba(0,0,0,0.2)] flex flex-col">
+        {/* HEADER */}
+        <div
+          className={`px-10 py-6 border-b flex items-center justify-between
+          ${
+            isCompleted
+              ? "bg-gradient-to-r from-green-50 to-white"
+              : "bg-gradient-to-r from-blue-50 to-white"
+          }`}
+        >
           <div>
             <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-extrabold text-gray-900">
                 {currentGoal.title}
               </h2>
-              <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase">
-                {currentGoal.status}
+
+              <span
+                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase
+                ${
+                  isCompleted
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}
+              >
+                {status.label}
               </span>
             </div>
+
             <p className="text-sm text-gray-500 mt-1">
               Gerencie sua meta e visualize seus aportes
             </p>
@@ -126,13 +137,13 @@ export function GoalDetailsModal({
               <>
                 <button
                   onClick={() => setView("EDIT")}
-                  className="p-3 text-gray-500 hover:bg-gray-100 rounded-xl transition cursor-pointer"
+                  className="p-3 rounded-xl hover:bg-gray-100 transition cursor-pointer"
                 >
                   <Edit2 size={20} />
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition cursor-pointer"
+                  className="p-3 rounded-xl hover:bg-red-50 text-red-500 transition cursor-pointer"
                 >
                   <Trash2 size={20} />
                 </button>
@@ -148,92 +159,85 @@ export function GoalDetailsModal({
           </div>
         </div>
 
-        {/* Conteúdo */}
+        {/* CONTEÚDO */}
         <div className="flex-1 overflow-y-auto p-10">
           {view === "DETAILS" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-              {/* COLUNA ESQUERDA */}
+              {/* ESQUERDA */}
               <div className="lg:col-span-6 space-y-8">
                 <div>
-                  <h4 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-                    <TrendingUp size={14} /> Desempenho
+                  <h4 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase mb-4 tracking-widest">
+                    <TrendingUp size={14} /> Progresso
                   </h4>
 
-                  <div className="bg-linear-to-br from-blue-50 to-white rounded-3xl p-8 border border-blue-100 shadow-sm">
+                  <div
+                    className={`rounded-3xl p-8 border shadow-sm
+                    ${
+                      isCompleted
+                        ? "bg-gradient-to-br from-green-50 to-white border-green-200"
+                        : "bg-gradient-to-br from-blue-50 to-white border-blue-200"
+                    }`}
+                  >
                     <div className="flex justify-between items-end mb-5">
                       <div>
-                        <p className="text-4xl font-black text-blue-700">
+                        <p
+                          className={`text-4xl font-black ${
+                            isCompleted
+                              ? "text-green-700"
+                              : "text-blue-700"
+                          }`}
+                        >
                           {progress.toFixed(1)}%
                         </p>
-                        <p className="text-sm text-blue-500 italic">
+                        <p className="text-sm italic text-gray-500">
                           da meta alcançada
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-gray-400 uppercase">
-                          Faltam
-                        </p>
-                        <p className="text-xl font-bold text-gray-800">
-                          {formatCurrency(remaining)}
-                        </p>
-                      </div>
+
+                      {!isCompleted && (
+                        <div className="text-right">
+                          <p className="text-xs font-bold text-gray-400 uppercase">
+                            Faltam
+                          </p>
+                          <p className="text-xl font-bold text-gray-800">
+                            {formatCurrency(remaining)}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="h-4 w-full bg-blue-100 rounded-full overflow-hidden shadow-inner">
+                    <div className="h-4 w-full rounded-full bg-gray-200 overflow-hidden">
                       <div
-                        className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
+                        className={`h-full rounded-full transition-all duration-1000
+                        ${
+                          isCompleted
+                            ? "bg-green-500"
+                            : "bg-blue-600"
+                        }`}
                         style={{ width: `${progress}%` }}
                       />
                     </div>
                   </div>
                 </div>
 
+                {/* Cards */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">
-                      Objetivo Final
-                    </p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {formatCurrency(total)}
-                    </p>
-                  </div>
-
-                  <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">
-                      Total Poupado
-                    </p>
-                    <p className="text-lg font-bold text-green-600">
-                      {formatCurrency(invested)}
-                    </p>
-                  </div>
-
-                  <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3">
-                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
-                      <Calendar size={18} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">
-                        Início
-                      </p>
-                      <p className="text-sm font-bold text-gray-700">
-                        {formatDate(currentGoal.startDate)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3">
-                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
-                      <Target size={18} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">
-                        Data Alvo
-                      </p>
-                      <p className="text-sm font-bold text-gray-700">
-                        {formatDate(currentGoal.targetDate)}
-                      </p>
-                    </div>
-                  </div>
+                  <InfoCard label="Objetivo Final" value={formatCurrency(total)} />
+                  <InfoCard
+                    label="Total Poupado"
+                    value={formatCurrency(invested)}
+                    highlight
+                  />
+                  <DateCard
+                    icon={<Calendar size={18} />}
+                    label="Início"
+                    value={formatDate(currentGoal.startDate)}
+                  />
+                  <DateCard
+                    icon={<Target size={18} />}
+                    label="Data Alvo"
+                    value={formatDate(currentGoal.targetDate)}
+                  />
                 </div>
 
                 {currentGoal.description && (
@@ -248,11 +252,11 @@ export function GoalDetailsModal({
                 )}
               </div>
 
-              {/* COLUNA DIREITA */}
+              {/* DIREITA */}
               <div className="lg:col-span-6 flex flex-col min-h-[420px]">
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    Aportes Realizados
+                    Aportes
                   </h4>
                   <button
                     onClick={() => setView("ADD_INVESTMENT")}
@@ -262,15 +266,7 @@ export function GoalDetailsModal({
                   </button>
                 </div>
 
-                <div className="
-                  flex-1
-                  bg-linear-to-b from-gray-50 to-white
-                  border border-gray-200/70
-                  rounded-3xl
-                  p-5
-                  overflow-hidden
-                  shadow-inner
-                ">
+                <div className="flex-1 rounded-3xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-5 shadow-inner overflow-hidden">
                   <TransactionsList
                     key={transactionsKey}
                     type="investment"
@@ -322,6 +318,34 @@ export function GoalDetailsModal({
         message="Tem certeza que deseja excluir esta meta?"
         isGroup={!!goalToDelete?.groupId}
       />
+    </div>
+  );
+}
+
+/* Componentes visuais auxiliares (só UI) */
+function InfoCard({ label, value, highlight = false }: any) {
+  return (
+    <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+      <p className="text-[10px] font-bold text-gray-400 uppercase">{label}</p>
+      <p
+        className={`text-lg font-bold ${
+          highlight ? "text-green-600" : "text-gray-900"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function DateCard({ icon, label, value }: any) {
+  return (
+    <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3">
+      <div className="p-2 bg-gray-50 rounded-lg text-gray-400">{icon}</div>
+      <div>
+        <p className="text-[10px] font-bold text-gray-400 uppercase">{label}</p>
+        <p className="text-sm font-bold text-gray-700">{value}</p>
+      </div>
     </div>
   );
 }
