@@ -39,6 +39,7 @@ export function GoalDetailsModal({
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<any | null>();
   const [transactionsKey, setTransactionsKey] = useState(0);
+  const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
 
   useEffect(() => {
     setCurrentGoal(initialGoal);
@@ -91,6 +92,16 @@ export function GoalDetailsModal({
   const handleTransactionListRefresh = async () => {
     onRefresh?.();
     setTransactionsKey((prev) => prev + 1);
+  };
+
+  const handleEditInvestment = (transaction: any) => {
+    setEditingTransaction(transaction);
+    setView("ADD_INVESTMENT");
+  };
+
+  const handleCloseInvestmentModal = () => {
+    setEditingTransaction(null);
+    setView("DETAILS");
   };
 
   return (
@@ -274,6 +285,7 @@ export function GoalDetailsModal({
                     goalId={currentGoal.id}
                     variant="minimal"
                     onRefresh={handleTransactionListRefresh}
+                    onEdit={handleEditInvestment}
                     exibirAcoes={true}
                   />
                 </div>
@@ -281,15 +293,15 @@ export function GoalDetailsModal({
             </div>
           )}
 
-          {view === "ADD_INVESTMENT" && (
+          {(view === "ADD_INVESTMENT" || editingTransaction) && (
             <CreateInvestmentModal
               goalId={currentGoal.id}
               goalTitle={currentGoal.title}
-              onClose={() => setView("DETAILS")}
+              initialData={editingTransaction || undefined}
+              onClose={handleCloseInvestmentModal}
               onSuccess={() => {
-                setView("DETAILS");
+                handleCloseInvestmentModal();
                 handleTransactionListRefresh();
-                toast.success("Aporte adicionado!");
               }}
             />
           )}

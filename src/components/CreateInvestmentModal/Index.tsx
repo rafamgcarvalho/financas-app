@@ -11,6 +11,7 @@ interface CreateInvestmentModalProps {
   goalTitle: string;
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: any;
 }
 
 export function CreateInvestmentModal({
@@ -18,10 +19,16 @@ export function CreateInvestmentModal({
   goalTitle,
   onClose,
   onSuccess,
+  initialData,
 }: CreateInvestmentModalProps) {
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [description, setDescription] = useState("");
+  const isEdit = Boolean(initialData?.id);
+  const [amount, setAmount] = useState(initialData?.amount?.toString() || "");
+  const [date, setDate] = useState(
+    initialData?.date
+      ? new Date(initialData.date).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0],
+  );
+  const [description, setDescription] = useState(initialData?.description || "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +37,7 @@ export function CreateInvestmentModal({
 
     try {
       const payload = {
-        title: `Aporte: ${goalTitle}`,
+        title: initialData?.title || `Aporte: ${goalTitle}`,
         amount: Number(amount),
         date: new Date(date).toISOString(),
         type: "INVESTMENT",
@@ -41,11 +48,17 @@ export function CreateInvestmentModal({
         goalId: goalId,
       };
 
-      await api.post("/transactions", payload);
+      if (isEdit) {
+        await api.patch(`/transactions/${initialData.id}`, payload);
+        toast.success("Aporte atualizado com sucesso!");
+      } else {
+        await api.post("/transactions", payload);
+        toast.success("Aporte adicionado com sucesso!");
+      }
 
       onSuccess();
     } catch (error: any) {
-      console.error("Erro detalhado:", error.message);
+      console.error("Erro detalhado:", error?.message || error);
       toast.error("Erro ao validar dados. Verifique os campos.");
     } finally {
       setLoading(false);
@@ -79,7 +92,7 @@ export function CreateInvestmentModal({
             </div>
             <div>
               <h3 className="text-base font-bold text-white leading-tight">
-                Novo Aporte
+                {isEdit ? 'Editar Aporte' : 'Novo Aporte'}
               </h3>
               <p className="text-[10px] text-blue-100 uppercase font-bold tracking-widest opacity-90">
                 {goalTitle}
@@ -175,7 +188,7 @@ export function CreateInvestmentModal({
                 disabled={loading}
                 className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg hover:brightness-110 disabled:opacity-60 transition-all cursor-pointer text-sm"
               >
-                {loading ? "Processando..." : "Confirmar Aporte"}
+                {loading ? "Processando..." : isEdit ? "Salvar Alterações" : "Confirmar Aporte"}
               </button>
 
               <button
