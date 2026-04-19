@@ -94,6 +94,7 @@ export default function InvestimentosPage() {
                   totalValue={goal.targetValue}
                   investedValue={goal.currentValue}
                   status={goal.status}
+                  members={goal.members}
                   onClick={() => setSelectedGoal(goal)}
                 />
               ))}

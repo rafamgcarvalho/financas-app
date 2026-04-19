@@ -1,3 +1,12 @@
+export type GoalMember = {
+  id: string;
+  userId: string;
+  name: string;
+  username: string;
+  role: "OWNER" | "MEMBER";
+  joinedAt?: string;
+};
+
 export type GoalModel = {
   id: string;
   title: string;
@@ -9,6 +18,8 @@ export type GoalModel = {
   type: "SHORT" | "MEDIUM" | "LONG";
   priority: "LOW" | "MEDIUM" | "ESSENTIAL";
   status: "ACTIVE" | "PAUSED" | "COMPLETED";
+  members?: GoalMember[];
+  isOwner?: boolean;
 };
 
 export type CreateGoalForm = {
@@ -21,4 +32,3 @@ export type CreateGoalForm = {
   priority: "LOW" | "MEDIUM" | "ESSENTIAL";
   status: "ACTIVE" | "PAUSED" | "COMPLETED";
 };
-

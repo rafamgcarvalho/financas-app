@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GoalModel } from "@/src/models/GoalModel";
+import { GoalModel, GoalMember } from "@/src/models/GoalModel";
 import {
   Edit2,
   Trash2,
@@ -12,6 +12,11 @@ import {
   Target,
   TrendingUp,
   Info,
+  Users,
+  UserPlus,
+  X,
+  Crown,
+  UserMinus,
 } from "lucide-react";
 import { api } from "@/src/services/api";
 import { toast } from "react-toastify";
@@ -41,6 +46,15 @@ export function GoalDetailsModal({
   const [transactionsKey, setTransactionsKey] = useState(0);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
 
+  // Estado para adicionar membro
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [memberUsername, setMemberUsername] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+
+  // Estado para remover membro
+  const [memberToRemove, setMemberToRemove] = useState<GoalMember | null>(null);
+  const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false);
+
   useEffect(() => {
     setCurrentGoal(initialGoal);
   }, [initialGoal]);
@@ -53,6 +67,9 @@ export function GoalDetailsModal({
   const remaining = Math.max(total - invested, 0);
 
   const isCompleted = currentGoal.status === "COMPLETED";
+  const isOwner = currentGoal.isOwner !== false; // default true para retrocompatibilidade
+  const members = currentGoal.members || [];
+  const isShared = members.length > 1;
 
   const statusMap = {
     ACTIVE: { label: "Ativa", color: "blue" },
@@ -104,6 +121,49 @@ export function GoalDetailsModal({
     setView("DETAILS");
   };
 
+  /* ========== MEMBROS ========== */
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memberUsername.trim()) return;
+
+    setAddingMember(true);
+    try {
+      await api.post(`/goals/${currentGoal.id}/members`, {
+        username: memberUsername.trim().toLowerCase(),
+      });
+      toast.success("Participante adicionado com sucesso!");
+      setMemberUsername("");
+      setIsAddMemberOpen(false);
+      onRefresh?.();
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao adicionar participante");
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleRemoveMember = (member: GoalMember) => {
+    setMemberToRemove(member);
+    setIsRemoveConfirmOpen(true);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      await api.delete(
+        `/goals/${currentGoal.id}/members/${memberToRemove.id}`
+      );
+      toast.success("Participante removido com sucesso!");
+      setIsRemoveConfirmOpen(false);
+      setMemberToRemove(null);
+      onRefresh?.();
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao remover participante");
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       <div
@@ -137,15 +197,24 @@ export function GoalDetailsModal({
               >
                 {status.label}
               </span>
+
+              {isShared && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-bold uppercase">
+                  <Users size={12} />
+                  Meta compartilhada
+                </span>
+              )}
             </div>
 
             <p className="text-sm text-gray-500 mt-1">
-              Gerencie sua meta e visualize seus aportes
+              {isShared
+                ? "Meta compartilhada — todos os participantes podem aportar"
+                : "Gerencie sua meta e visualize seus aportes"}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            {view === "DETAILS" && (
+            {view === "DETAILS" && isOwner && (
               <>
                 <button
                   onClick={() => setView("EDIT")}
@@ -262,6 +331,121 @@ export function GoalDetailsModal({
                     </p>
                   </div>
                 )}
+
+                {/* SEÇÃO DE PARTICIPANTES */}
+                <div className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h5 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                      <Users size={14} /> Participantes
+                    </h5>
+                    {isOwner && (
+                      <button
+                        onClick={() => setIsAddMemberOpen(!isAddMemberOpen)}
+                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-purple-600 hover:text-purple-700 transition cursor-pointer bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-full"
+                      >
+                        <UserPlus size={12} />
+                        Adicionar
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Form para adicionar membro */}
+                  {isAddMemberOpen && isOwner && (
+                    <form
+                      onSubmit={handleAddMember}
+                      className="mb-4 flex gap-2 items-center animate-in fade-in slide-in-from-top-2 duration-200"
+                    >
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={memberUsername}
+                          onChange={(e) => setMemberUsername(e.target.value)}
+                          placeholder="Digite o username..."
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-300 focus:bg-white transition-all"
+                          autoFocus
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={addingMember || !memberUsername.trim()}
+                        className="px-4 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 disabled:opacity-50 transition cursor-pointer shadow-sm"
+                      >
+                        {addingMember ? "..." : "Adicionar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddMemberOpen(false);
+                          setMemberUsername("");
+                        }}
+                        className="p-2.5 text-gray-400 hover:text-gray-600 transition cursor-pointer"
+                      >
+                        <X size={16} />
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Lista de membros */}
+                  <div className="space-y-2">
+                    {members.length > 0 ? (
+                      members.map((member) => (
+                        <div
+                          key={member.userId}
+                          className="flex items-center justify-between p-3 rounded-xl bg-gray-50/70 hover:bg-gray-100/70 transition group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                              {member.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                                {member.name}
+                                {member.role === "OWNER" && (
+                                  <Crown
+                                    size={12}
+                                    className="text-amber-500"
+                                    fill="currentColor"
+                                  />
+                                )}
+                              </p>
+                              <p className="text-[10px] text-gray-400">
+                                @{member.username}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                member.role === "OWNER"
+                                  ? "bg-amber-50 text-amber-600"
+                                  : "bg-blue-50 text-blue-600"
+                              }`}
+                            >
+                              {member.role === "OWNER"
+                                ? "Dono"
+                                : "Membro"}
+                            </span>
+
+                            {isOwner && member.role !== "OWNER" && (
+                              <button
+                                onClick={() => handleRemoveMember(member)}
+                                className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                                title="Remover participante"
+                              >
+                                <UserMinus size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-400 italic text-center py-3">
+                        Apenas você nesta meta
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* DIREITA */}
@@ -330,6 +514,18 @@ export function GoalDetailsModal({
         onConfirm={confirmDelete}
         message="Tem certeza que deseja excluir esta meta?"
         isGroup={!!goalToDelete?.groupId}
+      />
+
+      <ConfirmDialog
+        title="Remover participante"
+        isOpen={isRemoveConfirmOpen}
+        onClose={() => {
+          setIsRemoveConfirmOpen(false);
+          setMemberToRemove(null);
+        }}
+        onConfirm={confirmRemoveMember}
+        message={`Tem certeza que deseja remover ${memberToRemove?.name || "este participante"} desta meta?`}
+        isGroup={false}
       />
     </div>
   );

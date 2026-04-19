@@ -1,3 +1,6 @@
+import { GoalMember } from "@/src/models/GoalModel";
+import { Users } from "lucide-react";
+
 type GoalStatus = "ACTIVE" | "PAUSED" | "COMPLETED";
 
 type GoalCardProps = {
@@ -5,6 +8,7 @@ type GoalCardProps = {
   totalValue: number;
   investedValue: number;
   status: GoalStatus;
+  members?: GoalMember[];
   onClick?: () => void;
 };
 
@@ -13,6 +17,7 @@ export function GoalCard({
   totalValue,
   investedValue,
   status,
+  members = [],
   onClick,
 }: GoalCardProps) {
   const total = Number(totalValue) || 0;
@@ -37,6 +42,8 @@ export function GoalCard({
       badge: "bg-green-50 text-green-700 ring-green-200",
     },
   };
+
+  const isShared = members.length > 1;
 
   return (
     <div
@@ -73,14 +80,44 @@ export function GoalCard({
             {name}
           </h3>
 
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ring-1 ${
-              statusConfig[status].badge
-            }`}
-          >
-            {statusConfig[status].label}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            {isShared && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-1 text-[10px] font-semibold uppercase text-purple-700 ring-1 ring-purple-200">
+                <Users size={10} />
+                {members.length}
+              </span>
+            )}
+
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ring-1 ${
+                statusConfig[status].badge
+              }`}
+            >
+              {statusConfig[status].label}
+            </span>
+          </div>
         </div>
+
+        {/* Avatares dos membros */}
+        {isShared && (
+          <div className="mt-3 flex items-center gap-1">
+            {members.slice(0, 4).map((member, i) => (
+              <div
+                key={member.userId}
+                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-[9px] font-bold text-white ring-2 ring-white"
+                style={{ marginLeft: i > 0 ? "-4px" : "0", zIndex: 10 - i }}
+                title={member.name}
+              >
+                {member.name?.charAt(0).toUpperCase()}
+              </div>
+            ))}
+            {members.length > 4 && (
+              <span className="ml-1 text-[10px] text-gray-400 font-medium">
+                +{members.length - 4}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="mt-5 space-y-4">
           <div>
