@@ -95,7 +95,7 @@ export function TransactionForm({
     const errors = [];
 
     if (!formData.name) errors.push("Nome inválido");
-    if (!formData.amount || isNaN(amountNumber) || amountNumber < 0)
+    if (!formData.amount || isNaN(amountNumber) || amountNumber <= 0)
       errors.push("Valor inválido");
     if (!formData.transactionDate) errors.push("Data inválida");
     if (!formData.recurring && installmentsNumber < 1)
@@ -115,11 +115,11 @@ export function TransactionForm({
       const payload = {
         title: formData.name,
         amount: amountNumber,
-        description: formData.description || null,
+        description: formData.description || undefined,
         date: safeDate.toISOString(),
         category: formData.category,
         type: type.toUpperCase(),
-        isRecurring: formData.recurring,
+        isRecurring: formData.recurring === true,
         installments: formData.recurring ? 1 : installmentsNumber,
       };
 
@@ -134,7 +134,7 @@ export function TransactionForm({
       setFormData(initialFormState);
       onSuccess();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Erro ao salvar");
+      toast.error(error?.message || "Erro ao salvar");
     } finally {
       setLoading(false);
     }

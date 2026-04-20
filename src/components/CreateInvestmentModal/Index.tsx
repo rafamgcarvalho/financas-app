@@ -42,7 +42,7 @@ export function CreateInvestmentModal({
         date: new Date(date).toISOString(),
         type: "INVESTMENT",
         category: "investimento",
-        description: description || "",
+        description: description || undefined,
         isRecurring: false,
         installments: 1,
         goalId: goalId,
@@ -59,7 +59,7 @@ export function CreateInvestmentModal({
       onSuccess();
     } catch (error: any) {
       console.error("Erro detalhado:", error?.message || error);
-      toast.error("Erro ao validar dados. Verifique os campos.");
+      toast.error(error?.message || "Erro ao validar dados. Verifique os campos.");
     } finally {
       setLoading(false);
     }

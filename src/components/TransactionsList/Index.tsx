@@ -215,7 +215,20 @@ export function TransactionsList({
               return (
                 <tr key={item.id} className={rowClass}>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    {item.title || item.name}
+                    <div className="flex items-center gap-2">
+                      {item.title || item.name}
+                      {/* Mostra quem fez o aporte em metas compartilhadas */}
+                      {isInvestmentContext && item.userName && (
+                        <span className="inline-flex items-center gap-1 ml-1 shrink-0">
+                          <span className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-[8px] font-bold text-white">
+                            {item.userName.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {item.userName}
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   {type === "all" && (

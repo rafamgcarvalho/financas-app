@@ -2,8 +2,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { GoalModel, GoalMember } from "@/src/models/GoalModel";
+import { useGoalSocket, GoalUpdatedPayload } from "@/src/hooks/useGoalSocket";
 import {
   Edit2,
   Trash2,
@@ -58,6 +59,40 @@ export function GoalDetailsModal({
   useEffect(() => {
     setCurrentGoal(initialGoal);
   }, [initialGoal]);
+
+  // WebSocket — tempo real
+  const handleGoalUpdated = useCallback(
+    (payload: GoalUpdatedPayload) => {
+      if (payload.goalId !== currentGoal.id) return;
+
+      // Atualiza o valor atual da meta (barra de progresso cresce em tempo real)
+      setCurrentGoal((prev) => ({
+        ...prev,
+        currentValue: Number(payload.currentValue),
+      }));
+
+      // Recarrega a lista de aportes
+      setTransactionsKey((prev) => prev + 1);
+
+      // Toast informando quem fez o aporte
+      const actionText =
+        payload.action === "created"
+          ? "fez um aporte"
+          : payload.action === "updated"
+            ? "editou um aporte"
+            : "removeu um aporte";
+
+      const formattedAmount = Number(payload.amount).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+
+      toast.info(`💰 ${payload.userName} ${actionText} de ${formattedAmount}`);
+    },
+    [currentGoal.id],
+  );
+
+  useGoalSocket({ onGoalUpdated: handleGoalUpdated });
 
   if (!currentGoal) return null;
 

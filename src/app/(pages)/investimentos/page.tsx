@@ -7,6 +7,7 @@ import { GoalDetailsModal } from "@/src/components/GoalDetailsModal/Index";
 import { SpinLoader } from "@/src/components/SpinLoader/Index";
 import { GoalModel } from "@/src/models/GoalModel";
 import { api } from "@/src/services/api";
+import { useGoalSocket, GoalUpdatedPayload } from "@/src/hooks/useGoalSocket";
 import { useCallback, useEffect, useState } from "react";
 
 export default function InvestimentosPage() {
@@ -44,6 +45,28 @@ export default function InvestimentosPage() {
   useEffect(() => {
     fetchGoals();
   }, [fetchGoals]);
+
+  // WebSocket — atualiza cards em tempo real
+  const handleGoalUpdated = useCallback(
+    (payload: GoalUpdatedPayload) => {
+      setGoals((prev) =>
+        prev.map((goal) =>
+          goal.id === payload.goalId
+            ? { ...goal, currentValue: Number(payload.currentValue) }
+            : goal
+        )
+      );
+
+      // Atualiza o modal aberto se for a mesma meta
+      setSelectedGoal((prev) => {
+        if (!prev || prev.id !== payload.goalId) return prev;
+        return { ...prev, currentValue: Number(payload.currentValue) };
+      });
+    },
+    [],
+  );
+
+  useGoalSocket({ onGoalUpdated: handleGoalUpdated });
 
   if (loading) {
     return (
