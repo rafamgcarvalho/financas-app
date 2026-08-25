@@ -1,5 +1,6 @@
-import { GoalMember } from "@/src/models/GoalModel";
 import { Users } from "lucide-react";
+import { GoalMember } from "@/src/models/GoalModel";
+import { formatCurrency } from "@/src/utils/formatCurrency";
 
 type GoalStatus = "ACTIVE" | "PAUSED" | "COMPLETED";
 
@@ -12,6 +13,27 @@ type GoalCardProps = {
   onClick?: () => void;
 };
 
+const STATUS_CONFIG: Record<GoalStatus, { label: string; badge: string; bar: string; accent: string }> = {
+  ACTIVE: {
+    label: "Ativa",
+    badge: "bg-invest-50 text-invest-700 ring-invest-100",
+    bar: "bg-brand-400",
+    accent: "bg-brand-400",
+  },
+  PAUSED: {
+    label: "Pausada",
+    badge: "bg-amber-50 text-amber-700 ring-amber-200",
+    bar: "bg-amber-400",
+    accent: "bg-amber-400",
+  },
+  COMPLETED: {
+    label: "Concluída",
+    badge: "bg-income-50 text-income-700 ring-income-100",
+    bar: "bg-income-500",
+    accent: "bg-income-500",
+  },
+};
+
 export function GoalCard({
   name,
   totalValue,
@@ -22,145 +44,82 @@ export function GoalCard({
 }: GoalCardProps) {
   const total = Number(totalValue) || 0;
   const invested = Number(investedValue) || 0;
-
   const progress = total > 0 ? Math.min((invested / total) * 100, 100) : 0;
+  const remaining = Math.max(total - invested, 0);
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
-  const statusConfig = {
-    ACTIVE: { label: "Ativa", badge: "bg-blue-50 text-blue-700 ring-blue-200" },
-    PAUSED: {
-      label: "Pausada",
-      badge: "bg-yellow-50 text-yellow-700 ring-yellow-200",
-    },
-    COMPLETED: {
-      label: "Concluída",
-      badge: "bg-green-50 text-green-700 ring-green-200",
-    },
-  };
-
+  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.ACTIVE;
   const isShared = members.length > 1;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="
-      relative
-      min-w-[320px]
-      cursor-pointer
-      rounded-2xl
-      border border-gray-200/60
-      bg-linear-to-br from-white to-gray-50
-      p-6
-      shadow-[0_8px_24px_rgba(0,0,0,0.06)]
-      transition-all duration-300
-      hover:-translate-y-1
-      hover:shadow-[0_12px_32px_rgba(0,0,0,0.10)]
-    "
+      className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg cursor-pointer"
     >
-      {/* Accent lateral */}
-      <span
-        className={`absolute left-0 top-0 h-full w-1 rounded-l-2xl ${
-          status === "COMPLETED"
-            ? "bg-green-500"
-            : status === "PAUSED"
-              ? "bg-yellow-400"
-              : "bg-blue-600"
-        }`}
-      />
+      <span className={`absolute left-0 top-0 h-full w-1 ${config.accent}`} />
 
-      {/* Conteúdo */}
       <div className="pl-2">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 tracking-wide uppercase">
-            {name}
-          </h3>
+          <h3 className="line-clamp-2 text-sm font-semibold uppercase tracking-wide text-navy-800">{name}</h3>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             {isShared && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-1 text-[10px] font-semibold uppercase text-purple-700 ring-1 ring-purple-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase text-slate-600 ring-1 ring-slate-200">
                 <Users size={10} />
                 {members.length}
               </span>
             )}
 
             <span
-              className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ring-1 ${
-                statusConfig[status].badge
-              }`}
+              className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ring-1 ${config.badge}`}
             >
-              {statusConfig[status].label}
+              {config.label}
             </span>
           </div>
         </div>
 
-        {/* Avatares dos membros */}
         {isShared && (
           <div className="mt-3 flex items-center gap-1">
-            {members.slice(0, 4).map((member, i) => (
+            {members.slice(0, 4).map((member, index) => (
               <div
                 key={member.userId}
-                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-[9px] font-bold text-white ring-2 ring-white"
-                style={{ marginLeft: i > 0 ? "-4px" : "0", zIndex: 10 - i }}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-linear-to-br from-brand-400 to-brand-600 text-[9px] font-bold text-white ring-2 ring-white"
+                style={{ marginLeft: index > 0 ? "-4px" : 0, zIndex: 10 - index }}
                 title={member.name}
               >
                 {member.name?.charAt(0).toUpperCase()}
               </div>
             ))}
             {members.length > 4 && (
-              <span className="ml-1 text-[10px] text-gray-400 font-medium">
-                +{members.length - 4}
-              </span>
+              <span className="ml-1 text-[10px] font-medium text-slate-400">+{members.length - 4}</span>
             )}
           </div>
         )}
 
-        <div className="mt-5 space-y-4">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-              Meta
-            </p>
-            <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(total)}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-              Investido
-            </p>
-            <p className="text-sm font-semibold text-blue-600">
-              {formatCurrency(invested)}
-            </p>
-          </div>
+        {/* O valor investido é o número que importa aqui; a meta é a referência. */}
+        <div className="mt-5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Investido</p>
+          <p className="text-2xl font-bold tracking-tight text-navy-800">{formatCurrency(invested)}</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            de {formatCurrency(total)}
+            {remaining > 0 && ` · faltam ${formatCurrency(remaining)}`}
+          </p>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-5">
           <div className="mb-2 flex justify-between text-xs font-medium">
-            <span className="text-gray-400 uppercase tracking-wide">
-              Progresso
-            </span>
-            <span className="text-gray-900">{progress.toFixed(0)}%</span>
+            <span className="uppercase tracking-wide text-slate-400">Progresso</span>
+            <span className="text-navy-800">{progress.toFixed(0)}%</span>
           </div>
 
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200/60">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div
-              className={`h-full rounded-full transition-all duration-700 ease-out ${
-                status === "COMPLETED"
-                  ? "bg-green-500"
-                  : status === "PAUSED"
-                    ? "bg-yellow-400"
-                    : "bg-blue-600"
-              }`}
+              className={`h-full rounded-full transition-all duration-700 ease-out ${config.bar}`}
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
