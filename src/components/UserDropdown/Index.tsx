@@ -1,35 +1,38 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User, Settings, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Settings, ChevronDown } from "lucide-react";
+import { useLocalValue } from "@/src/hooks/useLocalStore";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [username, setUsername] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("name") || "Usuário";
-    }
-    return "Usuário";
-  });
+  // Fonte externa: o servidor renderiza o rótulo padrão e o cliente troca pelo
+  // nome salvo assim que assume a página.
+  const username = useLocalValue("name", "Usuário") ?? "Usuário";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -39,98 +42,51 @@ export default function UserDropdown() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Botão */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="
-          group flex items-center gap-3 rounded-full border border-gray-200
-          bg-white px-2 py-1.5 shadow-sm
-          transition-all duration-200
-          hover:shadow-md hover:border-gray-300
-          active:scale-[0.97] cursor-pointer
-        "
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        className="group flex items-center gap-2.5 rounded-full border border-slate-200 bg-white py-1.5 pl-1.5 pr-2.5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md active:scale-[0.97] cursor-pointer"
       >
-        {/* Avatar */}
-        <div className="
-          flex h-9 w-9 items-center justify-center rounded-full
-          bg-linear-to-br from-teal-400 to-teal-600
-          text-sm font-bold uppercase text-white
-          shadow-inner
-        ">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-brand-400 to-brand-600 text-sm font-bold uppercase text-white">
           {username.charAt(0)}
         </div>
 
-        {/* Nome */}
-        <div className="hidden sm:flex flex-col text-left">
-          <span className="text-sm font-semibold text-gray-700 leading-none">
-            @{username}
-          </span>
-          <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-teal-600">
-            Conta ativa
-          </span>
-        </div>
+        <span className="hidden text-sm font-semibold text-navy-800 sm:block">{username}</span>
 
-        {/* Chevron */}
         <ChevronDown
-          size={16}
-          className={`
-            ml-1 text-gray-400 transition-transform duration-200
-            ${isOpen ? "rotate-180" : ""}
-          `}
+          size={15}
+          className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
-      {/* Dropdown */}
       {isOpen && (
-        <div className="
-          absolute right-0 z-50 mt-2 w-56
-          rounded-2xl border border-gray-100 bg-white
-          shadow-xl
-          animate-in fade-in zoom-in duration-150
-          origin-top-right
-        ">
-          {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-              Conta
-            </p>
-            <p className="mt-0.5 text-sm font-medium text-gray-700">
-              @{username}
-            </p>
+        <div
+          role="menu"
+          className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-2xl border border-slate-200 bg-white shadow-xl animate-scale-in"
+        >
+          <div className="border-b border-slate-100 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Conta</p>
+            <p className="mt-0.5 truncate text-sm font-medium text-navy-800">{username}</p>
           </div>
 
-          {/* Itens */}
           <div className="py-2">
-            <button className="
-              flex w-full items-center gap-3 px-4 py-2.5
-              text-sm text-gray-600
-              hover:bg-gray-50 transition-colors cursor-pointer
-            ">
-              <User size={18} className="text-gray-400" />
-              Meu Perfil
-            </button>
-
-            <button className="
-              flex w-full items-center gap-3 px-4 py-2.5
-              text-sm text-gray-600
-              hover:bg-gray-50 transition-colors cursor-pointer
-            ">
-              <Settings size={18} className="text-gray-400" />
+            <Link
+              href="/configuracoes"
+              onClick={() => setIsOpen(false)}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+            >
+              <Settings size={17} className="text-slate-400" />
               Configurações
-            </button>
+            </Link>
           </div>
 
-          {/* Logout */}
-          <div className="border-t border-gray-100 p-2">
+          <div className="border-t border-slate-100 p-2">
             <button
               onClick={handleLogout}
-              className="
-                flex w-full items-center gap-3 rounded-lg
-                px-3 py-2.5 text-sm font-medium text-red-500
-                hover:bg-red-50 transition-colors cursor-pointer
-              "
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-expense-600 transition-colors hover:bg-expense-50 cursor-pointer"
             >
-              <LogOut size={18} />
+              <LogOut size={17} />
               Sair da conta
             </button>
           </div>
