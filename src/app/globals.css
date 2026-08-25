@@ -1,1 +1,160 @@
 @import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+ * Design tokens
+ * Todas as cores da marca e as cores semânticas vivem aqui. Trocar a identidade
+ * visual do app é trocar estes valores — nenhum hex fica espalhado nos
+ * componentes.
+ * ------------------------------------------------------------------------- */
+@theme {
+  /* Marca */
+  --color-brand-50: #eefbfa;
+  --color-brand-100: #d3f4f2;
+  --color-brand-200: #ade9e6;
+  --color-brand-300: #79d9d5;
+  --color-brand-400: #42b7b2;
+  --color-brand-500: #2ba09b;
+  --color-brand-600: #1f807d;
+  --color-brand-700: #1d6664;
+  --color-brand-800: #1c5251;
+  --color-brand-900: #1b4544;
+
+  /* Azul-marinho da sidebar */
+  --color-navy-50: #f2f5f9;
+  --color-navy-100: #e3e9f1;
+  --color-navy-400: #4c6489;
+  --color-navy-600: #2c4062;
+  --color-navy-700: #22324b;
+  --color-navy-800: #1a273b;
+  --color-navy-900: #131d2c;
+
+  /* Cores semânticas — receita, despesa, investimento e saldo.
+     Estas são as ÚNICAS cores usadas para representar tipo de transação. */
+  --color-income-50: #ecfdf5;
+  --color-income-100: #d1fae5;
+  --color-income-500: #10b981;
+  --color-income-600: #059669;
+  --color-income-700: #047857;
+
+  --color-expense-50: #fef2f2;
+  --color-expense-100: #fee2e2;
+  --color-expense-500: #ef4444;
+  --color-expense-600: #dc2626;
+  --color-expense-700: #b91c1c;
+
+  --color-invest-50: #eefbfa;
+  --color-invest-100: #d3f4f2;
+  --color-invest-500: #2ba09b;
+  --color-invest-600: #1f807d;
+  --color-invest-700: #1d6664;
+
+  --color-balance-50: #f2f5f9;
+  --color-balance-100: #e3e9f1;
+  --color-balance-500: #2c4062;
+  --color-balance-600: #22324b;
+  --color-balance-700: #1a273b;
+
+  /* Superfícies */
+  --color-canvas: #f4f6fa;
+  --color-surface: #ffffff;
+  --color-line: #e9edf3;
+
+  /* Animações */
+  --animate-fade-in: fade-in 0.18s ease-out;
+  --animate-scale-in: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-up: slide-up 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-navy-800);
+  }
+
+  /* Deixa o foco visível só para navegação por teclado */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Barra de rolagem discreta usada nos carrosséis de metas */
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background-color: var(--color-line);
+    border-radius: 9999px;
+  }
+
+  /* Respeita a área segura do iPhone na navegação inferior */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
