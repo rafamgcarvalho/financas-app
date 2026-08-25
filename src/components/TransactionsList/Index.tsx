@@ -13,6 +13,7 @@ import {
   Search,
   SquarePen,
   Trash2,
+  TriangleAlert,
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -152,6 +153,7 @@ export function TransactionsList({
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
+  const [partialFailures, setPartialFailures] = useState(0);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
 
@@ -187,15 +189,28 @@ export function TransactionsList({
         return `/transactions${query ? `?${query}` : ""}`;
       };
 
-      const responses = periods.length
-        ? await Promise.all(periods.map((period) => api.get<Transaction[]>(buildUrl(period))))
-        : [await api.get<Transaction[]>(buildUrl())];
+      // allSettled, não all: com Promise.all uma única falha descartava os
+      // meses que voltaram bem e a lista inteira aparecia vazia.
+      const settled = await Promise.allSettled(
+        periods.length
+          ? periods.map((period) => api.get<Transaction[]>(buildUrl(period)))
+          : [api.get<Transaction[]>(buildUrl())],
+      );
+
+      const failures = settled.filter((result) => result.status === "rejected").length;
+      setPartialFailures(failures);
+
+      if (failures === settled.length) {
+        throw new Error("Nenhum período pôde ser carregado");
+      }
 
       // Uma transação pode voltar em mais de uma chamada; o id desempata.
       const byId = new Map<string, Transaction>();
 
-      for (const response of responses) {
-        for (const item of Array.isArray(response) ? response : []) {
+      for (const result of settled) {
+        if (result.status !== "fulfilled") continue;
+
+        for (const item of Array.isArray(result.value) ? result.value : []) {
           if (type !== "all" && String(item.type).toUpperCase() !== type.toUpperCase()) continue;
           if (goalId && item.goalId !== goalId) continue;
           byId.set(item.id, item);
@@ -338,6 +353,16 @@ export function TransactionsList({
                 {filtered.length} {filtered.length === 1 ? "lançamento" : "lançamentos"}
                 {isFiltering && ` de ${transactions.length}`}
               </p>
+
+              {/* Carregamento parcial precisa aparecer: um total incompleto
+                  exibido como se fosse completo induz a erro. */}
+              {partialFailures > 0 && (
+                <p className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-600">
+                  <TriangleAlert size={12} />
+                  {partialFailures} {partialFailures === 1 ? "mês não pôde" : "meses não puderam"} ser
+                  carregado{partialFailures === 1 ? "" : "s"} — os totais estão incompletos.
+                </p>
+              )}
             </div>
 
             {exportable && (

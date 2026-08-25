@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, TriangleAlert } from "lucide-react";
 import { formatMonthLabel } from "@/src/lib/dates";
 
 export type Period = { month: number; year: number };
@@ -23,6 +23,9 @@ const PRESETS: { key: PeriodPreset; label: string }[] = [
   { key: "custom", label: "Personalizado" },
 ];
 
+/** Teto de meses consultados de uma vez — cada mês é uma requisição. */
+export const MAX_PERIOD_MONTHS = 24;
+
 const toIndex = (period: Period) => period.year * 12 + (period.month - 1);
 const fromIndex = (index: number): Period => ({
   year: Math.floor(index / 12),
@@ -40,7 +43,8 @@ export function periodsBetween(from: Period, to: Period): Period[] {
   }
 
   // Guarda-chuva contra um intervalo absurdo virar dezenas de requisições.
-  return periods.slice(0, 24);
+  // Quem chama descobre que houve corte comparando com MAX_PERIOD_MONTHS.
+  return periods.slice(0, MAX_PERIOD_MONTHS);
 }
 
 export function presetRange(preset: PeriodPreset): { from: Period; to: Period } {
@@ -79,6 +83,9 @@ function parseMonthInput(value: string): Period | null {
  */
 export function PeriodSelector({ value, onChange, minDate, maxDate }: PeriodSelectorProps) {
   const [showCustom, setShowCustom] = useState(value.preset === "custom");
+
+  const truncated =
+    Math.abs(toIndex(value.to) - toIndex(value.from)) + 1 > MAX_PERIOD_MONTHS;
 
   const bounds = useMemo(() => {
     const min = minDate ? monthInputValue({
@@ -126,6 +133,13 @@ export function PeriodSelector({ value, onChange, minDate, maxDate }: PeriodSele
           </button>
         ))}
       </div>
+
+      {truncated && (
+        <p className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <TriangleAlert size={13} className="shrink-0" />
+          Mostrando apenas os {MAX_PERIOD_MONTHS} meses mais recentes do intervalo escolhido.
+        </p>
+      )}
 
       {showCustom && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
