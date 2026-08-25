@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { ChevronDown, Loader2, Repeat, Zap } from "lucide-react";
+import { ChevronDown, CreditCard, Loader2, Repeat, Wallet, Zap } from "lucide-react";
 import { api } from "@/src/services/api";
 import { useCategories } from "@/src/hooks/useCategories";
 import { CategoryIcon } from "../CategoryIcon/Index";
@@ -24,7 +24,8 @@ type TransactionFormProps = {
   initialData?: Transaction | null;
   /** Vincula o lançamento a uma meta (usado no modal de detalhes da meta). */
   goalId?: string;
-  onSaved: () => void;
+  /** Recebe o que acabou de ser gravado, para quem precisa reagir à data. */
+  onSaved: (saved: { title: string; date: string }) => void;
   onCancel?: () => void;
   /** Fecha o modal depois de salvar; false mantém aberto para o próximo lançamento. */
   onDone?: () => void;
@@ -41,6 +42,23 @@ function emptyForm(): TransactionFormState {
     recurring: false,
     installments: "1",
   };
+}
+
+type RepetitionKey = "single" | "installments" | "recurring";
+
+const REPETITIONS: { key: RepetitionKey; label: string; icon: typeof Wallet }[] = [
+  { key: "single", label: "À vista", icon: Wallet },
+  { key: "installments", label: "Parcelado", icon: CreditCard },
+  { key: "recurring", label: "Recorrente", icon: Repeat },
+];
+
+/** "jun/2026" — cabe na prévia sem quebrar linha. */
+function shortMonth(index: number): string {
+  const label = new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(
+    new Date(Math.floor(index / 12), index % 12, 15),
+  );
+
+  return label.replace(/\.? de /, "/");
 }
 
 /** Estado inicial a partir da transação em edição, ou um formulário limpo. */
@@ -136,8 +154,8 @@ export function TransactionForm({
     if (!form.date) next.date = "Informe a data";
     // Sem categoria padrão: escolher errado em silêncio é pior que um passo a mais.
     if (!form.category) next.category = "Escolha uma categoria";
-    if (!form.recurring && (!Number.isInteger(installments) || installments < 1 || installments > 48))
-      next.installments = "Entre 1 e 48 parcelas";
+    if (!form.recurring && Number(form.installments) > 1 && (!Number.isInteger(installments) || installments < 2 || installments > 48))
+      next.installments = "Entre 2 e 48 parcelas";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -182,7 +200,7 @@ export function TransactionForm({
       }
 
       rememberEntry({ title: payload.title, amount, category: payload.category, type });
-      onSaved();
+      onSaved({ title: payload.title, date: form.date });
 
       if (keepOpenRef.current) {
         // "Salvar e novo": mantém data e categoria, limpa o resto.
@@ -201,10 +219,63 @@ export function TransactionForm({
   };
 
   const amountPreview = digitsToNumber(form.amountDigits);
-  const installmentValue =
-    !form.recurring && Number(form.installments) > 1
-      ? amountPreview / Number(form.installments)
-      : null;
+
+  // A repetição é derivada do formulário, não guardada à parte — assim os
+  // chips e o payload nunca discordam entre si.
+  const repetition: RepetitionKey = form.recurring
+    ? "recurring"
+    : Number(form.installments) > 1
+      ? "installments"
+      : "single";
+
+  const setRepetition = (key: RepetitionKey) => {
+    setForm((prev) => {
+      if (key === "recurring") return { ...prev, recurring: true, installments: "1" };
+      if (key === "single") return { ...prev, recurring: false, installments: "1" };
+      // Ao escolher "Parcelado", 1 parcela não faria sentido.
+      return {
+        ...prev,
+        recurring: false,
+        installments: Number(prev.installments) > 1 ? prev.installments : "2",
+      };
+    });
+    setErrors((prev) => ({ ...prev, installments: "" }));
+  };
+
+  /** Em que meses as parcelas caem, e qual delas é a deste mês. */
+  const installmentPlan = useMemo(() => {
+    const count = Number(form.installments);
+
+    if (repetition !== "installments" || !Number.isInteger(count) || count < 2 || !form.date) {
+      return null;
+    }
+
+    const start = new Date(`${form.date}T12:00:00`);
+    if (Number.isNaN(start.getTime())) return null;
+
+    const firstIndex = start.getFullYear() * 12 + start.getMonth();
+    const lastIndex = firstIndex + count - 1;
+
+    const now = new Date();
+    const nowIndex = now.getFullYear() * 12 + now.getMonth();
+    const isWithin = nowIndex >= firstIndex && nowIndex <= lastIndex;
+
+    return {
+      each: amountPreview / count,
+      firstLabel: shortMonth(firstIndex),
+      lastLabel: shortMonth(lastIndex),
+      currentNumber: isWithin ? nowIndex - firstIndex + 1 : null,
+    };
+  }, [repetition, form.installments, form.date, amountPreview]);
+
+  /** Modo edição: mostra a repetição gravada, sem deixar alterá-la. */
+  const repetitionSummary = initialData?.isRecurring
+    ? "Recorrente (mensal)"
+    : Number(initialData?.installments ?? 1) > 1
+      ? initialData?.installmentNumber
+        ? `Parcela ${initialData.installmentNumber} de ${initialData.installments}`
+        : `Parcelado em ${initialData?.installments}x`
+      : "Lançamento único";
 
   const dateShortcuts = [
     { label: "Hoje", value: todayInput() },
@@ -212,8 +283,12 @@ export function TransactionForm({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="flex h-full flex-col">
-      <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+    // min-h-0 é o que faz o formulário rolar: um item de flex column tem
+    // min-height:auto por padrão e se recusa a encolher abaixo do conteúdo,
+    // então o overflow-y-auto de dentro nunca entrava em ação — o formulário
+    // crescia, o modal cortava, e o rodapé com o botão Salvar saía da tela.
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-6">
         {/* Atalhos dos lançamentos mais frequentes */}
         {suggestions.length > 0 && (
           <section>
@@ -240,7 +315,7 @@ export function TransactionForm({
         {/* Valor — o campo principal, grande e com foco automático */}
         <section>
           <label htmlFor="amount" className="mb-1.5 block text-sm font-medium text-slate-600">
-            Valor
+            {repetition === "installments" ? "Valor total" : "Valor"}
           </label>
           <div
             className={`flex items-center gap-2 rounded-2xl border-2 bg-white px-4 py-3 transition ${
@@ -262,11 +337,6 @@ export function TransactionForm({
             />
           </div>
           {errors.amountDigits && <p className="mt-1 text-xs text-expense-600">{errors.amountDigits}</p>}
-          {installmentValue !== null && (
-            <p className="mt-1.5 text-xs text-slate-500">
-              {form.installments}x de <strong>{formatCurrency(installmentValue)}</strong>
-            </p>
-          )}
         </section>
 
         {/* Nome */}
@@ -359,14 +429,102 @@ export function TransactionForm({
           {errors.category && <p className="mt-1 text-xs text-expense-600">{errors.category}</p>}
         </section>
 
-        {/* Campos usados com menos frequência ficam recolhidos */}
+        {/* Repetição — parcelar é rotina aqui, não pode ficar escondido atrás
+            de um "Mais opções" recolhido. */}
+        {isEditing ? (
+          <section>
+            <label className="mb-1.5 block text-sm font-medium text-slate-600">Repetição</label>
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              {repetitionSummary}
+              <span className="mt-0.5 block text-xs text-slate-400">
+                A edição altera somente este lançamento.
+              </span>
+            </p>
+          </section>
+        ) : (
+          <section>
+            <label className="mb-1.5 block text-sm font-medium text-slate-600">Repetição</label>
+
+            <div className="grid grid-cols-3 gap-2">
+              {REPETITIONS.map((option) => {
+                const active = repetition === option.key;
+
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => setRepetition(option.key)}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-medium transition cursor-pointer sm:text-sm ${
+                      active
+                        ? "border-navy-700 bg-navy-700 text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <option.icon size={14} />
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {repetition === "installments" && (
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <div className="flex items-center gap-3">
+                  <label htmlFor="installments" className="text-xs font-medium text-slate-500">
+                    Nº de parcelas
+                  </label>
+                  <input
+                    id="installments"
+                    type="number"
+                    inputMode="numeric"
+                    min={2}
+                    max={48}
+                    value={form.installments}
+                    onChange={(e) => update("installments", e.target.value)}
+                    className={`w-20 rounded-lg border bg-white px-3 py-1.5 text-sm outline-none transition focus:border-brand-400 ${
+                      errors.installments ? "border-expense-500" : "border-slate-200"
+                    }`}
+                  />
+                </div>
+
+                {errors.installments && (
+                  <p className="mt-1.5 text-xs text-expense-600">{errors.installments}</p>
+                )}
+
+                {/* Deixa explícito o que será criado: quem lança uma compra
+                    antiga precisa conferir em que mês cada parcela cai. */}
+                {installmentPlan && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    <strong className={theme.text}>
+                      {form.installments}x de {formatCurrency(installmentPlan.each)}
+                    </strong>{" "}
+                    · de {installmentPlan.firstLabel} a {installmentPlan.lastLabel}
+                    {installmentPlan.currentNumber && (
+                      <span className="mt-0.5 block text-slate-400">
+                        A parcela deste mês é a {installmentPlan.currentNumber}ª.
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {repetition === "recurring" && (
+              <p className="mt-2 text-xs text-slate-500">
+                Repete todo mês a partir da data escolhida, sem data para acabar.
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* Só a descrição continua recolhida */}
         <section className="rounded-xl border border-slate-200 bg-slate-50/60">
           <button
             type="button"
             onClick={() => setShowAdvanced((prev) => !prev)}
             className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 cursor-pointer"
           >
-            Mais opções
+            Descrição
             <ChevronDown
               size={16}
               className={`text-slate-400 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
@@ -374,62 +532,15 @@ export function TransactionForm({
           </button>
 
           {showAdvanced && (
-            <div className="space-y-4 border-t border-slate-200 px-4 py-4">
-              <div>
-                <label htmlFor="description" className="mb-1.5 block text-xs font-medium text-slate-500">
-                  Descrição
-                </label>
-                <textarea
-                  id="description"
-                  rows={2}
-                  value={form.description}
-                  onChange={(e) => update("description", e.target.value)}
-                  placeholder={placeholders.description}
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-brand-400"
-                />
-              </div>
-
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                <input
-                  type="checkbox"
-                  checked={form.recurring}
-                  onChange={(e) => {
-                    update("recurring", e.target.checked);
-                    if (e.target.checked) update("installments", "1");
-                  }}
-                  className="mt-0.5 h-4 w-4 cursor-pointer accent-brand-500"
-                />
-                <span>
-                  <span className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                    <Repeat size={14} className="text-slate-400" />
-                    Recorrente (mensal)
-                  </span>
-                  <span className="mt-0.5 block text-xs text-slate-500">
-                    Repete todo mês, sem data para acabar.
-                  </span>
-                </span>
-              </label>
-
-              <div className={form.recurring ? "pointer-events-none opacity-40" : ""}>
-                <label htmlFor="installments" className="mb-1.5 block text-xs font-medium text-slate-500">
-                  Nº de parcelas
-                </label>
-                <input
-                  id="installments"
-                  type="number"
-                  min={1}
-                  max={48}
-                  value={form.installments}
-                  onChange={(e) => update("installments", e.target.value)}
-                  disabled={form.recurring}
-                  className={`w-28 rounded-xl border bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-400 ${
-                    errors.installments ? "border-expense-500" : "border-slate-200"
-                  }`}
-                />
-                {errors.installments && (
-                  <p className="mt-1 text-xs text-expense-600">{errors.installments}</p>
-                )}
-              </div>
+            <div className="border-t border-slate-200 px-4 py-4">
+              <textarea
+                id="description"
+                rows={2}
+                value={form.description}
+                onChange={(e) => update("description", e.target.value)}
+                placeholder={placeholders.description}
+                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-brand-400"
+              />
             </div>
           )}
         </section>
