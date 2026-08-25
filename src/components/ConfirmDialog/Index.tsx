@@ -1,9 +1,15 @@
+"use client";
+
+import { useEffect } from "react";
+import { AlertTriangle } from "lucide-react";
+
 type ConfirmDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (deleteAll: boolean) => void;
   title: string;
   message: string;
+  /** Quando a transação faz parte de um parcelamento/recorrência. */
   isGroup?: boolean;
 };
 
@@ -15,52 +21,57 @@ export function ConfirmDialog({
   message,
   isGroup,
 }: ConfirmDialogProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-60 flex items-center justify-center px-4" role="alertdialog" aria-modal="true">
+      <div className="absolute inset-0 bg-navy-900/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-fade-in">
-        <h3 className="text-lg font-semibold text-gray-900">
-          {title}
-        </h3>
+      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-scale-in">
+        <div className="flex gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-expense-50 text-expense-600">
+            <AlertTriangle size={20} />
+          </div>
 
-        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-          {message}
-        </p>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-navy-800">{title}</h3>
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">{message}</p>
+          </div>
+        </div>
 
-        {/* Ações */}
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-6 flex flex-col gap-3">
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 rounded-xl border border-gray-300 py-3 text-sm font-medium text-gray-700
-                         hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 transition cursor-pointer"
+              className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
             >
               Cancelar
             </button>
 
             <button
               onClick={() => onConfirm(false)}
-              className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-medium text-white
-                         hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 transition cursor-pointer"
+              autoFocus
+              className="flex-1 rounded-xl bg-expense-500 py-3 text-sm font-semibold text-white transition hover:bg-expense-600 cursor-pointer"
             >
               {isGroup ? "Somente esta" : "Excluir"}
             </button>
           </div>
 
-          {/* Ação avançada */}
           {isGroup && (
             <button
               onClick={() => onConfirm(true)}
-              className="rounded-xl border border-red-200 bg-red-50 py-3 text-xs font-semibold
-                         uppercase tracking-wide text-red-600 hover:bg-red-100 transition cursor-pointer"
+              className="rounded-xl border border-expense-100 bg-expense-50 py-3 text-xs font-semibold uppercase tracking-wide text-expense-600 transition hover:bg-expense-100 cursor-pointer"
             >
               Excluir todas as parcelas
             </button>
