@@ -39,6 +39,32 @@ function DeltaBadge({
 
   const change = percentChange(amount, previousAmount);
 
+  // Um percentual só informa quando os dois meses têm a mesma direção e a base
+  // não é irrisória: sair de -R$ 100 para R$ 7.886 vira "7987%", que é
+  // aritmeticamente correto e completamente inútil de ler. Nesses casos o que
+  // ajuda é a diferença em reais.
+  const signsDiffer =
+    previousAmount !== 0 && Math.sign(amount) !== Math.sign(previousAmount) && amount !== 0;
+  const absurdRatio = change !== null && Math.abs(change) >= 1000;
+
+  if (change !== null && (signsDiffer || absurdRatio)) {
+    const delta = amount - previousAmount;
+    const good = isPositiveChange(type, delta);
+    const color =
+      tone === "dark" ? "text-white/80" : good ? "text-income-600" : "text-expense-600";
+
+    return (
+      <p className={`mt-2 flex items-center gap-1 text-xs font-medium ${color}`}>
+        {delta > 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+        {delta > 0 ? "+" : "−"}
+        {formatCurrency(Math.abs(delta))}
+        <span className={tone === "dark" ? "font-normal text-white/50" : "font-normal text-slate-400"}>
+          vs. {previousLabel ?? "mês anterior"}
+        </span>
+      </p>
+    );
+  }
+
   // Sem base de comparação (mês anterior zerado) não há percentual honesto.
   if (change === null) {
     return (

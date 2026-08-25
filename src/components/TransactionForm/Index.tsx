@@ -437,7 +437,9 @@ export function TransactionForm({
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
               {repetitionSummary}
               <span className="mt-0.5 block text-xs text-slate-400">
-                A edição altera somente este lançamento.
+                {initialData?.groupId
+                  ? "Alterar nome, valor ou categoria vale para todas as parcelas; a data muda só aqui."
+                  : "A edição altera somente este lançamento."}
               </span>
             </p>
           </section>
@@ -511,7 +513,7 @@ export function TransactionForm({
 
             {repetition === "recurring" && (
               <p className="mt-2 text-xs text-slate-500">
-                Repete todo mês a partir da data escolhida, sem data para acabar.
+                Cria 12 lançamentos mensais a partir da data escolhida, com o mesmo valor.
               </p>
             )}
           </section>

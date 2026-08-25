@@ -16,7 +16,7 @@ export type GoalModel = {
   startDate: string;
   targetDate: string;
   type: "SHORT" | "MEDIUM" | "LONG";
-  priority: "LOW" | "MEDIUM" | "ESSENTIAL";
+  priority: "ESSENTIAL" | "IMPORTANT" | "DESIRABLE";
   status: "ACTIVE" | "PAUSED" | "COMPLETED";
   members?: GoalMember[];
   isOwner?: boolean;
@@ -29,6 +29,6 @@ export type CreateGoalForm = {
   startDate: string;
   targetDate?: string;
   type: "SHORT" | "MEDIUM" | "LONG";
-  priority: "LOW" | "MEDIUM" | "ESSENTIAL";
+  priority: "ESSENTIAL" | "IMPORTANT" | "DESIRABLE";
   status: "ACTIVE" | "PAUSED" | "COMPLETED";
 };
