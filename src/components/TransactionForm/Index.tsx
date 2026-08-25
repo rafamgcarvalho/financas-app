@@ -85,6 +85,7 @@ export function TransactionForm({
   onDone,
 }: TransactionFormProps) {
   const isEditing = Boolean(initialData?.id);
+  const isGroup = Boolean(initialData?.groupId);
   const theme = themeFor(type);
 
   const { categories } = useCategories(type);
@@ -100,6 +101,8 @@ export function TransactionForm({
     initialData?.id ? [] : getSuggestions(type),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Ao editar uma parcela: alterar só ela ou o parcelamento inteiro.
+  const [updateAll, setUpdateAll] = useState(false);
 
   const amountRef = useRef<HTMLInputElement>(null);
   // Se o usuário escolheu a categoria na mão, não sobrescrevemos com a sugestão.
@@ -188,8 +191,11 @@ export function TransactionForm({
 
     try {
       if (initialData?.id) {
-        await api.patch(`/transactions/${initialData.id}`, payload);
-        toast.success("Lançamento atualizado!");
+        const scope = isGroup && updateAll ? "?updateAll=true" : "";
+        await api.patch(`/transactions/${initialData.id}${scope}`, payload);
+        toast.success(
+          isGroup && updateAll ? "Todas as parcelas foram atualizadas!" : "Lançamento atualizado!",
+        );
       } else {
         await api.post("/transactions", payload);
         toast.success(
@@ -436,12 +442,41 @@ export function TransactionForm({
             <label className="mb-1.5 block text-sm font-medium text-slate-600">Repetição</label>
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
               {repetitionSummary}
-              <span className="mt-0.5 block text-xs text-slate-400">
-                {initialData?.groupId
-                  ? "Alterar nome, valor ou categoria vale para todas as parcelas; a data muda só aqui."
-                  : "A edição altera somente este lançamento."}
-              </span>
             </p>
+
+            {isGroup && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {[
+                  { value: false, label: "Só este", hint: "Corrige uma parcela" },
+                  { value: true, label: "Todas", hint: "Vale para o grupo" },
+                ].map((option) => (
+                  <button
+                    key={String(option.value)}
+                    type="button"
+                    onClick={() => setUpdateAll(option.value)}
+                    className={`rounded-xl border px-3 py-2 text-left transition cursor-pointer ${
+                      updateAll === option.value
+                        ? "border-navy-700 bg-navy-700 text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="block text-xs font-semibold">{option.label}</span>
+                    <span
+                      className={`block text-[11px] ${
+                        updateAll === option.value ? "text-white/70" : "text-slate-400"
+                      }`}
+                    >
+                      {option.hint}
+                    </span>
+                  </button>
+                ))}
+
+                <p className="col-span-2 text-[11px] text-slate-400">
+                  A data sempre muda apenas neste lançamento — é ela que separa uma parcela da
+                  outra.
+                </p>
+              </div>
+            )}
           </section>
         ) : (
           <section>

@@ -5,10 +5,21 @@ orçamento por categoria e metas financeiras compartilhadas.
 
 Front-end em Next.js 16 (App Router) + Tailwind 4. A API é um serviço separado.
 
+## Onde isto fica
+
+```
+app-financas/
+  financas-app/          este repositório (interface)
+  financas-app-backend/  a API
+```
+
+O front não funciona sozinho: suba a API primeiro, seguindo o README dela.
+
 ## Rodando localmente
 
 ```bash
 npm install
+cp .env.example .env.local   # ajuste a porta se necessário
 npm run dev
 ```
 
@@ -16,14 +27,12 @@ Abra http://localhost:3000.
 
 ### Variáveis de ambiente
 
-Crie um `.env.local` apontando para a API:
+| Variável | Para que serve |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | URL da API. Também é usada pelo WebSocket das metas. |
 
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-Sem isso o app assume `http://localhost:3001`. A mesma URL é usada pelo
-WebSocket que atualiza as metas em tempo real.
+Sem `.env.local` o app assume `http://localhost:3001`. Se essa porta já estiver
+ocupada por outro projeto, rode a API em outra e aponte esta variável para ela.
 
 ## Scripts
 
