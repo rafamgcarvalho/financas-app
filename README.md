@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Finanças App
 
-## Getting Started
+Gerenciador financeiro pessoal: lançamento de receitas, despesas e investimentos,
+orçamento por categoria e metas financeiras compartilhadas.
 
-First, run the development server:
+Front-end em Next.js 16 (App Router) + Tailwind 4. A API é um serviço separado.
+
+## Rodando localmente
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Variáveis de ambiente
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Crie um `.env.local` apontando para a API:
 
-## Learn More
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
 
-To learn more about Next.js, take a look at the following resources:
+Sem isso o app assume `http://localhost:3001`. A mesma URL é usada pelo
+WebSocket que atualiza as metas em tempo real.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Comando | O que faz |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção (roda o TypeScript) |
+| `npm start` | Sobe o build de produção |
+| `npm run lint` | ESLint |
 
-## Deploy on Vercel
+## Estrutura
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+  app/
+    (admin)/         login e cadastro
+    (pages)/         área logada (dashboard, receitas, despesas, ...)
+  components/        um diretório por componente, com Index.tsx
+  contexts/          TransactionsProvider — modal global de lançamento
+  hooks/             useCategories, useLocalStore, useGoalSocket
+  lib/               regras puras: categorias, orçamento, datas, moeda, CSV
+  models/            tipos da API
+  services/          cliente HTTP
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Onde ficam as coisas
+
+- **Lançar uma transação**: `TransactionsProvider` mantém um único
+  `TransactionModal` montado para todo o app. Qualquer tela abre o modal com
+  `openTransaction()`; o atalho `N` faz o mesmo.
+- **Recarregar listas**: o provider expõe `refreshToken`, que muda a cada
+  gravação. Passe-o para `TransactionsList` e ela refaz a busca.
+- **Cores**: `src/app/globals.css` define os tokens; `src/lib/transactionTheme.ts`
+  diz como cada tipo de transação aparece. Não use hex solto nos componentes.
+- **Categorias e orçamento**: ficam no navegador (`src/lib/storage.ts`,
+  isolados por usuário) porque a API ainda não tem endpoint para eles. Para
+  migrar, basta trocar o corpo das funções em `lib/categories.ts` e
+  `lib/budgets.ts` — o resto do app só conhece essa interface.
+
+## PWA
+
+`public/manifest.json` permite instalar o app na tela inicial do celular, com
+atalhos diretos para "Nova despesa" e "Nova receita".
