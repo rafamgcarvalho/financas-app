@@ -20,14 +20,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await api.post("/auth/login", { username, password });
-      const response = await api.get(`/users/${username}`);
+      const data = await api.post<{ access_token: string }>("/auth/login", { username, password });
+      const response = await api.get<{ name: string }>(`/users/${username}`);
 
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("name", response.name);
+      // O username identifica as preferências locais (categorias, orçamentos)
+      // para que duas contas no mesmo navegador não se misturem.
+      localStorage.setItem("username", username);
       toast.success("Login realizado com sucesso!");
 
-      router.push("/");
+      // Sessão expirada guarda a página de origem em ?from= — voltamos para ela
+      // em vez de sempre despejar o usuário no dashboard.
+      const from = new URLSearchParams(window.location.search).get("from");
+      router.push(from?.startsWith("/") ? from : "/");
       router.refresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -37,10 +43,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-100">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-canvas">
       {/* 🔵 Shape 1 */}
       <div
-        className="absolute w-[500px] h-[500px] bg-teal-600 rounded-full blur-3xl opacity-30"
+        className="absolute w-[500px] h-[500px] bg-brand-500 rounded-full blur-3xl opacity-30"
         style={{
           top: "-150px",
           left: "-150px",
@@ -50,7 +56,7 @@ export default function LoginPage() {
 
       {/* 🔵 Shape 2 */}
       <div
-        className="absolute w-[450px] h-[450px] bg-blue-600 rounded-full blur-3xl opacity-25"
+        className="absolute w-[450px] h-[450px] bg-navy-600 rounded-full blur-3xl opacity-25"
         style={{
           bottom: "-150px",
           right: "-150px",
@@ -60,7 +66,7 @@ export default function LoginPage() {
 
       {/* 🔵 Shape 3 */}
       <div
-        className="absolute w-[400px] h-[400px] bg-teal-300 rounded-full blur-3xl opacity-20"
+        className="absolute w-[400px] h-[400px] bg-brand-300 rounded-full blur-3xl opacity-20"
         style={{
           top: "40%",
           right: "-200px",
@@ -82,7 +88,7 @@ export default function LoginPage() {
             <input
               type="text"
               required
-              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
+              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none"
               placeholder="Seu usuário"
               value={username}
               onChange={(e) =>
@@ -99,7 +105,7 @@ export default function LoginPage() {
               <input
                 type={showPassword ? "text" : "password"}
                 required
-                className="w-full p-3 pr-12 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
+                className="w-full p-3 pr-12 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -107,7 +113,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-teal-600 transition-colors cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-brand-500 transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -117,7 +123,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-[#42B7B2] text-white font-semibold transition hover:bg-teal-600 disabled:opacity-50 cursor-pointer"
+            className="w-full py-3 rounded-xl bg-brand-400 text-white font-semibold transition hover:bg-brand-500 disabled:opacity-50 cursor-pointer"
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
@@ -127,7 +133,7 @@ export default function LoginPage() {
           Não tem uma conta?{" "}
           <Link
             href="/register"
-            className="text-[#42B7B2] font-medium hover:underline"
+            className="text-brand-500 font-medium hover:underline"
           >
             Cadastre-se
           </Link>
