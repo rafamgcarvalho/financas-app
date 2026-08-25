@@ -1,282 +1,477 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { api } from "@/src/services/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
+import { ChevronDown, Loader2, Repeat, Zap } from "lucide-react";
+import { api } from "@/src/services/api";
+import { useCategories } from "@/src/hooks/useCategories";
+import { CategoryIcon } from "../CategoryIcon/Index";
+import { digitsToNumber, formatDigits, numberToDigits, toDigits } from "@/src/lib/money";
+import { inputDateToISO, isoToInputDate, todayInput, yesterdayInput } from "@/src/lib/dates";
+import { categoryForTitle, getSuggestions, rememberEntry, type RecentEntry } from "@/src/lib/recentEntries";
+import { formatCurrency } from "@/src/utils/formatCurrency";
+import { themeFor } from "@/src/lib/transactionTheme";
+import type {
+  Transaction,
+  TransactionFormState,
+  TransactionKind,
+  TransactionPayload,
+  TransactionType,
+} from "@/src/models/TransactionModel";
 
-interface TransactionFormProps {
-  type: "income" | "expense" | "investment";
-  buttonLabel: string;
-  categories: { value: string; label: string }[];
-  onSuccess: () => void;
-  initialData?: any;
+type TransactionFormProps = {
+  type: TransactionKind;
+  initialData?: Transaction | null;
+  /** Vincula o lançamento a uma meta (usado no modal de detalhes da meta). */
+  goalId?: string;
+  onSaved: () => void;
+  onCancel?: () => void;
+  /** Fecha o modal depois de salvar; false mantém aberto para o próximo lançamento. */
+  onDone?: () => void;
+};
+
+function emptyForm(): TransactionFormState {
+  return {
+    title: "",
+    description: "",
+    amountDigits: "",
+    // Data já preenchida com hoje: era o campo que mais custava cliques.
+    date: todayInput(),
+    category: "",
+    recurring: false,
+    installments: "1",
+  };
+}
+
+/** Estado inicial a partir da transação em edição, ou um formulário limpo. */
+function formFrom(initialData?: Transaction | null): TransactionFormState {
+  if (!initialData) return emptyForm();
+
+  return {
+    title: initialData.title ?? "",
+    description: initialData.description ?? "",
+    amountDigits: numberToDigits(initialData.amount),
+    date: isoToInputDate(initialData.date),
+    category: initialData.category ?? "",
+    recurring: initialData.isRecurring ?? false,
+    installments: String(initialData.installments ?? 1),
+  };
 }
 
 export function TransactionForm({
   type,
-  buttonLabel,
-  categories,
-  onSuccess,
   initialData,
+  goalId,
+  onSaved,
+  onCancel,
+  onDone,
 }: TransactionFormProps) {
+  const isEditing = Boolean(initialData?.id);
+  const theme = themeFor(type);
+
+  const { categories } = useCategories(type);
+
+  // O modal remonta este formulário a cada abertura (via `key`), então o estado
+  // inicial já vem certo — sem precisar de efeito para sincronizar com as props.
+  const [form, setForm] = useState<TransactionFormState>(() => formFrom(initialData));
   const [loading, setLoading] = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
+  const [showAdvanced, setShowAdvanced] = useState(
+    () => Boolean(initialData?.description) || Boolean(initialData?.isRecurring),
+  );
+  const [suggestions, setSuggestions] = useState<RecentEntry[]>(() =>
+    initialData?.id ? [] : getSuggestions(type),
+  );
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const placeholders = {
-    name:
-      type === "income"
-        ? "Ex: Salário"
-        : type === "expense"
-        ? "Ex: Aluguel"
-        : "Ex: Investimento",
-    description:
-      type === "income"
-        ? "Origem da receita (opcional)"
-        : "Detalhes da despesa (opcional)",
-  };
+  const amountRef = useRef<HTMLInputElement>(null);
+  // Se o usuário escolheu a categoria na mão, não sobrescrevemos com a sugestão.
+  const categoryTouched = useRef(Boolean(initialData));
+  const keepOpenRef = useRef(false);
 
-  const initialFormState = useMemo(
+  const placeholders = useMemo(
     () => ({
-      name: "",
-      description: "",
-      amount: "",
-      transactionDate: "",
-      category: categories[0]?.value || "outros",
-      recurring: false,
-      installments: "1",
-      type,
-    }),
-    [type, categories],
+      income: { title: "Ex: Salário", description: "Origem da receita (opcional)" },
+      expense: { title: "Ex: Aluguel", description: "Detalhes da despesa (opcional)" },
+      investment: { title: "Ex: Aporte Tesouro Selic", description: "Detalhes do aporte (opcional)" },
+    })[type],
+    [type],
   );
 
-  const [formData, setFormData] = useState<any>(initialFormState);
-
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        name: initialData.title || initialData.name,
-        description: initialData.description || "",
-        amount: initialData.amount.toString(),
-        transactionDate: initialData.date.split("T")[0],
-        category: initialData.category,
-        recurring: initialData.isRecurring || false,
-        installments: initialData.installments?.toString() || "1",
-        type,
-      });
+    amountRef.current?.focus();
+  }, []);
 
-      formRef.current?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      setFormData(initialFormState);
-    }
-  }, [initialData, initialFormState, type]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  const update = <K extends keyof TransactionFormState>(key: K, value: TransactionFormState[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => (prev[key as string] ? { ...prev, [key as string]: "" } : prev));
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { checked } = e.target;
-    setFormData((prev: any) => ({
+  const applySuggestion = (entry: RecentEntry) => {
+    setForm((prev) => ({
       ...prev,
-      recurring: checked,
-      installments: checked ? "1" : prev.installments,
+      title: entry.title,
+      amountDigits: numberToDigits(entry.amount),
+      category: entry.category,
     }));
+    categoryTouched.current = true;
+    setErrors({});
+    amountRef.current?.focus();
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  /** Ao sair do campo nome, sugere a categoria usada da última vez para ele. */
+  const handleTitleBlur = () => {
+    if (categoryTouched.current || !form.title.trim()) return;
 
-    const amountNumber = Number(formData.amount);
-    const installmentsNumber = Number(formData.installments);
-    const errors = [];
+    const remembered = categoryForTitle(form.title, type);
+    if (remembered) update("category", remembered);
+  };
 
-    if (!formData.name) errors.push("Nome inválido");
-    if (!formData.amount || isNaN(amountNumber) || amountNumber <= 0)
-      errors.push("Valor inválido");
-    if (!formData.transactionDate) errors.push("Data inválida");
-    if (!formData.recurring && installmentsNumber < 1)
-      errors.push("Número de parcelas inválido");
+  const validate = (): boolean => {
+    const next: Record<string, string> = {};
+    const amount = digitsToNumber(form.amountDigits);
+    const installments = Number(form.installments);
 
-    if (errors.length) {
+    if (!form.title.trim()) next.title = "Informe um nome";
+    if (amount <= 0) next.amountDigits = "Informe um valor maior que zero";
+    if (!form.date) next.date = "Informe a data";
+    // Sem categoria padrão: escolher errado em silêncio é pior que um passo a mais.
+    if (!form.category) next.category = "Escolha uma categoria";
+    if (!form.recurring && (!Number.isInteger(installments) || installments < 1 || installments > 48))
+      next.installments = "Entre 1 e 48 parcelas";
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!validate()) {
       toast.dismiss();
-      errors.forEach((err) => toast.error(err));
+      toast.error("Confira os campos destacados");
       return;
     }
 
     setLoading(true);
 
+    const amount = digitsToNumber(form.amountDigits);
+
+    const payload: TransactionPayload = {
+      title: form.title.trim(),
+      amount,
+      description: form.description.trim() || undefined,
+      date: inputDateToISO(form.date),
+      category: form.category,
+      type: type.toUpperCase() as TransactionType,
+      isRecurring: form.recurring,
+      installments: form.recurring ? 1 : Number(form.installments),
+      ...(goalId ? { goalId } : {}),
+    };
+
     try {
-      const safeDate = new Date(`${formData.transactionDate}T12:00:00`);
-
-      const payload = {
-        title: formData.name,
-        amount: amountNumber,
-        description: formData.description || undefined,
-        date: safeDate.toISOString(),
-        category: formData.category,
-        type: type.toUpperCase(),
-        isRecurring: formData.recurring === true,
-        installments: formData.recurring ? 1 : installmentsNumber,
-      };
-
       if (initialData?.id) {
         await api.patch(`/transactions/${initialData.id}`, payload);
-        toast.success("Transação atualizada!");
+        toast.success("Lançamento atualizado!");
       } else {
         await api.post("/transactions", payload);
-        toast.success("Transação(ões) criada(s) com sucesso!");
+        toast.success(
+          payload.installments > 1
+            ? `${payload.installments} parcelas criadas!`
+            : `${theme.label} salva com sucesso!`,
+        );
       }
 
-      setFormData(initialFormState);
-      onSuccess();
-    } catch (error: any) {
-      toast.error(error?.message || "Erro ao salvar");
+      rememberEntry({ title: payload.title, amount, category: payload.category, type });
+      onSaved();
+
+      if (keepOpenRef.current) {
+        // "Salvar e novo": mantém data e categoria, limpa o resto.
+        setForm((prev) => ({ ...emptyForm(), date: prev.date, category: prev.category }));
+        setSuggestions(getSuggestions(type));
+        amountRef.current?.focus();
+      } else {
+        onDone?.();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar");
     } finally {
+      keepOpenRef.current = false;
       setLoading(false);
     }
   };
 
+  const amountPreview = digitsToNumber(form.amountDigits);
+  const installmentValue =
+    !form.recurring && Number(form.installments) > 1
+      ? amountPreview / Number(form.installments)
+      : null;
+
+  const dateShortcuts = [
+    { label: "Hoje", value: todayInput() },
+    { label: "Ontem", value: yesterdayInput() },
+  ];
+
   return (
-    <div ref={formRef} className="scroll-mt-24">
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Nome e Valor */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              Nome
-            </label>
-            <input
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder={placeholders.name}
-              className="w-full rounded-xl border px-4 py-3 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              Valor (R$)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              name="amount"
-              value={formData.amount}
-              onChange={handleChange}
-              placeholder="0,00"
-              className="w-full rounded-xl border px-4 py-3 text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Descrição */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
-            Descrição
-          </label>
-          <textarea
-            rows={2}
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder={placeholders.description}
-            className="w-full rounded-xl border px-4 py-3 text-sm"
-          />
-        </div>
-
-        {/* Data, Categoria, Recorrência */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              Data
-            </label>
-            <input
-              type="date"
-              name="transactionDate"
-              value={formData.transactionDate}
-              onChange={handleChange}
-              className="w-full rounded-xl border px-4 py-3 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              Categoria
-            </label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full rounded-xl border px-4 py-3 text-sm cursor-pointer"
-            >
-              {categories.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
+    <form onSubmit={handleSubmit} className="flex h-full flex-col">
+      <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+        {/* Atalhos dos lançamentos mais frequentes */}
+        {suggestions.length > 0 && (
+          <section>
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Zap size={13} />
+              Lançamentos frequentes
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((entry) => (
+                <button
+                  key={`${entry.type}-${entry.title}`}
+                  type="button"
+                  onClick={() => applySuggestion(entry)}
+                  className="group flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 cursor-pointer"
+                >
+                  <span className="truncate max-w-[10rem]">{entry.title}</span>
+                  <span className={`font-semibold ${theme.text}`}>{formatCurrency(entry.amount)}</span>
+                </button>
               ))}
-            </select>
-          </div>
-
-          {/* Recorrente + Parcelas */}
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.recurring}
-                onChange={handleCheckboxChange}
-                className="h-4 w-4 cursor-pointer"
-              />
-              Recorrente (mensal)
-            </label>
-
-            <div
-              className={`transition ${
-                formData.recurring ? "opacity-40" : "opacity-100"
-              }`}
-            >
-              <label className="block text-xs text-gray-500 mb-1">
-                Nº de parcelas
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="48"
-                name="installments"
-                value={formData.installments}
-                onChange={handleChange}
-                disabled={formData.recurring}
-                className="w-24 rounded-lg border px-2 py-1 text-sm disabled:cursor-not-allowed"
-              />
             </div>
+          </section>
+        )}
+
+        {/* Valor — o campo principal, grande e com foco automático */}
+        <section>
+          <label htmlFor="amount" className="mb-1.5 block text-sm font-medium text-slate-600">
+            Valor
+          </label>
+          <div
+            className={`flex items-center gap-2 rounded-2xl border-2 bg-white px-4 py-3 transition ${
+              errors.amountDigits
+                ? "border-expense-500"
+                : "border-slate-200 focus-within:border-brand-400"
+            }`}
+          >
+            <span className="text-xl font-semibold text-slate-400">R$</span>
+            <input
+              id="amount"
+              ref={amountRef}
+              inputMode="decimal"
+              autoComplete="off"
+              value={formatDigits(form.amountDigits)}
+              onChange={(e) => update("amountDigits", toDigits(e.target.value))}
+              placeholder="0,00"
+              className={`w-full bg-transparent text-3xl font-bold tracking-tight outline-none placeholder:text-slate-300 ${theme.text}`}
+            />
           </div>
-        </div>
-
-        {/* Botões */}
-        <div className="flex gap-4 pt-4">
-          {initialData && (
-            <button
-              type="button"
-              onClick={onSuccess}
-              className="flex-1 rounded-xl border py-3 text-sm cursor-pointer"
-            >
-              Cancelar
-            </button>
+          {errors.amountDigits && <p className="mt-1 text-xs text-expense-600">{errors.amountDigits}</p>}
+          {installmentValue !== null && (
+            <p className="mt-1.5 text-xs text-slate-500">
+              {form.installments}x de <strong>{formatCurrency(installmentValue)}</strong>
+            </p>
           )}
+        </section>
 
+        {/* Nome */}
+        <section>
+          <label htmlFor="title" className="mb-1.5 block text-sm font-medium text-slate-600">
+            Nome
+          </label>
+          <input
+            id="title"
+            value={form.title}
+            onChange={(e) => update("title", e.target.value)}
+            onBlur={handleTitleBlur}
+            placeholder={placeholders.title}
+            autoComplete="off"
+            className={`w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition focus:border-brand-400 ${
+              errors.title ? "border-expense-500" : "border-slate-200"
+            }`}
+          />
+          {errors.title && <p className="mt-1 text-xs text-expense-600">{errors.title}</p>}
+        </section>
+
+        {/* Data com atalhos */}
+        <section>
+          <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-slate-600">
+            Data
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            {dateShortcuts.map((shortcut) => {
+              const active = form.date === shortcut.value;
+              return (
+                <button
+                  key={shortcut.label}
+                  type="button"
+                  onClick={() => update("date", shortcut.value)}
+                  className={`rounded-xl px-3.5 py-2.5 text-sm font-medium transition cursor-pointer ${
+                    active
+                      ? "bg-navy-700 text-white"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {shortcut.label}
+                </button>
+              );
+            })}
+            <input
+              id="date"
+              type="date"
+              value={form.date}
+              onChange={(e) => update("date", e.target.value)}
+              className={`flex-1 min-w-[9rem] rounded-xl border bg-white px-4 py-2.5 text-sm outline-none transition focus:border-brand-400 cursor-pointer ${
+                errors.date ? "border-expense-500" : "border-slate-200"
+              }`}
+            />
+          </div>
+          {errors.date && <p className="mt-1 text-xs text-expense-600">{errors.date}</p>}
+        </section>
+
+        {/* Categoria em chips com ícone */}
+        <section>
+          <label className="mb-1.5 block text-sm font-medium text-slate-600">Categoria</label>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => {
+              const active = form.category === category.value;
+
+              return (
+                <button
+                  key={category.value}
+                  type="button"
+                  onClick={() => {
+                    categoryTouched.current = true;
+                    update("category", category.value);
+                  }}
+                  style={active ? { backgroundColor: category.color, borderColor: category.color } : undefined}
+                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition cursor-pointer ${
+                    active
+                      ? "text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <CategoryIcon
+                    icon={category.icon}
+                    size={14}
+                    style={!active ? { color: category.color } : undefined}
+                  />
+                  {category.label}
+                </button>
+              );
+            })}
+          </div>
+          {errors.category && <p className="mt-1 text-xs text-expense-600">{errors.category}</p>}
+        </section>
+
+        {/* Campos usados com menos frequência ficam recolhidos */}
+        <section className="rounded-xl border border-slate-200 bg-slate-50/60">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((prev) => !prev)}
+            className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-600 cursor-pointer"
+          >
+            Mais opções
+            <ChevronDown
+              size={16}
+              className={`text-slate-400 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {showAdvanced && (
+            <div className="space-y-4 border-t border-slate-200 px-4 py-4">
+              <div>
+                <label htmlFor="description" className="mb-1.5 block text-xs font-medium text-slate-500">
+                  Descrição
+                </label>
+                <textarea
+                  id="description"
+                  rows={2}
+                  value={form.description}
+                  onChange={(e) => update("description", e.target.value)}
+                  placeholder={placeholders.description}
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-brand-400"
+                />
+              </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                <input
+                  type="checkbox"
+                  checked={form.recurring}
+                  onChange={(e) => {
+                    update("recurring", e.target.checked);
+                    if (e.target.checked) update("installments", "1");
+                  }}
+                  className="mt-0.5 h-4 w-4 cursor-pointer accent-brand-500"
+                />
+                <span>
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                    <Repeat size={14} className="text-slate-400" />
+                    Recorrente (mensal)
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Repete todo mês, sem data para acabar.
+                  </span>
+                </span>
+              </label>
+
+              <div className={form.recurring ? "pointer-events-none opacity-40" : ""}>
+                <label htmlFor="installments" className="mb-1.5 block text-xs font-medium text-slate-500">
+                  Nº de parcelas
+                </label>
+                <input
+                  id="installments"
+                  type="number"
+                  min={1}
+                  max={48}
+                  value={form.installments}
+                  onChange={(e) => update("installments", e.target.value)}
+                  disabled={form.recurring}
+                  className={`w-28 rounded-xl border bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-400 ${
+                    errors.installments ? "border-expense-500" : "border-slate-200"
+                  }`}
+                />
+                {errors.installments && (
+                  <p className="mt-1 text-xs text-expense-600">{errors.installments}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Ações fixas no rodapé, sempre visíveis */}
+      <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 bg-white px-6 py-4">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
+          >
+            Cancelar
+          </button>
+        )}
+
+        {!isEditing && (
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 rounded-xl py-3 text-sm text-white cursor-pointer bg-[#42B7B2] disabled:opacity-60"
+            onClick={() => {
+              keepOpenRef.current = true;
+            }}
+            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
           >
-            {loading ? "Salvando..." : buttonLabel}
+            Salvar e novo
           </button>
-        </div>
-      </form>
-    </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          onClick={() => {
+            keepOpenRef.current = false;
+          }}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition disabled:opacity-60 cursor-pointer ${theme.solid} ${theme.solidHover}`}
+        >
+          {loading && <Loader2 size={16} className="animate-spin" />}
+          {isEditing ? "Salvar alterações" : `Salvar ${theme.label.toLowerCase()}`}
+        </button>
+      </div>
+    </form>
   );
 }
