@@ -1,111 +1,111 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { api } from "@/src/services/api";
+import { AXIS_STYLE, ChartCard, TOOLTIP_STYLE } from "../ChartCard/Index";
+import { formatCurrency } from "@/src/utils/formatCurrency";
+import { findCategory } from "@/src/lib/categories";
 
-export function CategoryPieChart({
-  month,
-  year,
-}: {
-  month: number;
-  year: number;
-}) {
-  const [data, setData] = useState([]);
+type CategoryEntry = {
+  name: string;
+  value: number;
+  fill?: string;
+  /** Alguns endpoints devolvem a chave da categoria em vez do rótulo. */
+  category?: string;
+};
+
+export function CategoryPieChart({ month, year }: { month: number; year: number }) {
+  const [data, setData] = useState<CategoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     async function fetchData() {
       try {
-        const response = await api.get(
+        setLoading(true);
+        const response = await api.get<CategoryEntry[]>(
           `/transactions/stats/categories?month=${month}&year=${year}`,
         );
-        setData(response);
-      } catch (e) {
-        console.error(e);
+        if (active) setData(Array.isArray(response) ? response : []);
+      } catch (error) {
+        console.error("Erro ao carregar gastos por categoria", error);
+        if (active) setData([]);
+      } finally {
+        if (active) setLoading(false);
       }
     }
+
     fetchData();
+    return () => {
+      active = false;
+    };
   }, [month, year]);
 
-  return (
-    <div className="w-full h-[420px] bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-      {/* Header */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Gastos por Categoria
-        </h3>
-        <p className="text-sm text-gray-500">
-          Distribuição dos gastos no período
-        </p>
-      </div>
+  // Usa o rótulo e a cor do cadastro de categorias, caindo para o que a API
+  // mandou quando o valor não é uma categoria conhecida.
+  const chartData = useMemo(
+    () =>
+      data
+        .filter((entry) => Number(entry.value) > 0)
+        .map((entry) => {
+          const known = findCategory(entry.category ?? entry.name);
+          const isKnown = known.value === (entry.category ?? entry.name);
 
-      <div className="flex-1">
+          return {
+            name: isKnown ? known.label : entry.name,
+            value: Number(entry.value),
+            fill: entry.fill ?? known.color,
+          };
+        })
+        .sort((a, b) => b.value - a.value),
+    [data],
+  );
+
+  const total = chartData.reduce((acc, entry) => acc + entry.value, 0);
+
+  return (
+    <ChartCard
+      title="Gastos por categoria"
+      subtitle="Distribuição das despesas no período"
+      loading={loading}
+      empty={chartData.length === 0}
+      emptyMessage="Nenhuma despesa categorizada neste mês."
+    >
+      <div className="relative h-full">
+        {/* Total no centro da rosca — o número que se procura primeiro. */}
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-12">
+          <span className="text-[11px] uppercase tracking-wide text-slate-400">Total</span>
+          <span className="text-lg font-bold text-navy-800">{formatCurrency(total)}</span>
+        </div>
+
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              innerRadius={78}
-              outerRadius={110}
-              paddingAngle={4}
-              strokeWidth={0}
-            >
-              {data.map((entry: any, index: number) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={entry.fill}
-                />
+            <Pie data={chartData} dataKey="value" innerRadius={62} outerRadius={92} paddingAngle={3} strokeWidth={0}>
+              {chartData.map((entry) => (
+                <Cell key={entry.name} fill={entry.fill} />
               ))}
             </Pie>
 
             <Tooltip
-              contentStyle={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: "12px",
-                border: "1px solid #E5E7EB",
-                boxShadow: "0 10px 20px -5px rgba(0,0,0,0.1)",
-                padding: "10px 12px",
-              }}
-              labelStyle={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#374151",
-                marginBottom: 4,
-              }}
-              itemStyle={{
-                fontSize: 12,
-                color: "#111827",
-              }}
-              formatter={(value: any) =>
-                `R$ ${Number(value).toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`
-              }
+              {...TOOLTIP_STYLE}
+              formatter={(value, name) => [
+                `${formatCurrency(Number(value) || 0)} (${total ? Math.round(((Number(value) || 0) / total) * 100) : 0}%)`,
+                String(name),
+              ]}
             />
 
             <Legend
               verticalAlign="bottom"
               align="center"
               iconType="circle"
-              iconSize={10}
-              wrapperStyle={{
-                fontSize: "12px",
-                color: "#374151",
-                paddingTop: "12px",
-              }}
+              iconSize={9}
+              wrapperStyle={{ fontSize: 11, color: AXIS_STYLE.tick.fill, paddingTop: 8 }}
             />
           </PieChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </ChartCard>
   );
 }

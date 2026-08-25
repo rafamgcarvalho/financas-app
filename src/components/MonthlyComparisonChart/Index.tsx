@@ -1,125 +1,89 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "@/src/services/api";
+import { AXIS_STYLE, ChartCard, TOOLTIP_STYLE } from "../ChartCard/Index";
+import { formatCurrency } from "@/src/utils/formatCurrency";
+import { formatCompactCurrency } from "@/src/lib/money";
+import { TYPE_THEME } from "@/src/lib/transactionTheme";
 
-interface Props {
-  month: number;
-  year: number;
+type ComparisonEntry = {
+  name: string;
+  valor: number;
+  fill?: string;
+};
+
+/** Cor por rótulo, caso a API não mande `fill`. */
+function colorFor(name: string, fallback?: string): string {
+  const key = name.toLowerCase();
+
+  if (key.startsWith("receita")) return TYPE_THEME.income.hex;
+  if (key.startsWith("despesa")) return TYPE_THEME.expense.hex;
+  if (key.startsWith("invest")) return TYPE_THEME.investment.hex;
+
+  return fallback ?? "#94a3b8";
 }
 
-export function MonthlyComparisonChart({ month, year }: Props) {
-  const [data, setData] = useState([]);
+export function MonthlyComparisonChart({ month, year }: { month: number; year: number }) {
+  const [data, setData] = useState<ComparisonEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     async function fetchData() {
       try {
-        const response = await api.get(
+        setLoading(true);
+        const response = await api.get<ComparisonEntry[]>(
           `/transactions/stats/comparison?month=${month}&year=${year}`,
         );
-        setData(response);
+        if (active) setData(Array.isArray(response) ? response : []);
       } catch (error) {
         console.error("Erro ao carregar comparativo", error);
+        if (active) setData([]);
+      } finally {
+        if (active) setLoading(false);
       }
     }
+
     fetchData();
+    return () => {
+      active = false;
+    };
   }, [month, year]);
 
+  const isEmpty = data.every((entry) => !Number(entry.valor));
+
   return (
-    <div className="w-full h-[420px] bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-      {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Comparativo do Mês
-        </h3>
-        <p className="text-sm text-gray-500">
-          Receitas x Despesas
-        </p>
-      </div>
+    <ChartCard
+      title="Comparativo do mês"
+      subtitle="Receitas x Despesas"
+      loading={loading}
+      empty={isEmpty}
+      emptyMessage="Nenhum lançamento neste mês para comparar."
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 8, right: 8, left: 4, bottom: 0 }} barCategoryGap={28}>
+          <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e9edf3" />
+          <XAxis dataKey="name" {...AXIS_STYLE} />
+          <YAxis {...AXIS_STYLE} width={64} tickFormatter={(value: number) => formatCompactCurrency(value)} />
 
-      {/* Chart */}
-      <div className="flex-1 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={data}
-            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-            barCategoryGap={24}
-          >
-            <CartesianGrid
-              strokeDasharray="4 4"
-              vertical={false}
-              stroke="#E5E7EB"
-            />
+          <Tooltip
+            cursor={{ fill: "#f8fafc" }}
+            {...TOOLTIP_STYLE}
+            formatter={(value) => formatCurrency(Number(value) || 0)}
+          />
 
-            <XAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#6B7280", fontSize: 12 }}
-            />
-
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#6B7280", fontSize: 12 }}
-            />
-
-            <Tooltip
-              cursor={{ fill: "#F9FAFB" }}
-              contentStyle={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: "12px",
-                border: "1px solid #E5E7EB",
-                boxShadow: "0 10px 20px -5px rgba(0,0,0,0.1)",
-                padding: "10px 12px",
-              }}
-              labelStyle={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#374151",
-                marginBottom: 4,
-              }}
-              itemStyle={{
-                fontSize: 12,
-                color: "#111827",
-              }}
-              formatter={(value: any) => {
-                if (value === undefined || value === null) return "R$ 0,00";
-
-                return `R$ ${Number(value).toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`;
-              }}
-            />
-
-            <Bar
-              dataKey="valor"
-              barSize={44}
-              radius={[10, 10, 4, 4]}
-            >
-              {data.map((entry: any, index: number) => (
-                <rect
-                  key={`bar-${index}`}
-                  fill={entry.fill}
-                  rx={10}
-                  ry={10}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+          {/* Cell é o que o recharts usa para colorir barra a barra — antes havia
+              um <rect> aqui, que ele ignora. */}
+          <Bar dataKey="valor" barSize={44} radius={[10, 10, 4, 4]}>
+            {data.map((entry) => (
+              <Cell key={entry.name} fill={colorFor(entry.name, entry.fill)} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
   );
 }

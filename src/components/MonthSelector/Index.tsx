@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatMonthLabel } from "@/src/lib/dates";
 
 interface MonthSelectorProps {
   onChange: (month: number, year: number) => void;
@@ -10,8 +11,7 @@ interface MonthSelectorProps {
   maxDate?: string;
 }
 
-function generateDynamicMonths(minStr?: string, maxStr?: string) {
-  const months = [];
+function generateMonths(minStr?: string, maxStr?: string) {
   const now = new Date();
 
   const start = minStr ? new Date(minStr) : new Date(now.getFullYear(), now.getMonth() - 12, 1);
@@ -21,62 +21,73 @@ function generateDynamicMonths(minStr?: string, maxStr?: string) {
   const endTotal = end.getUTCFullYear() * 12 + end.getUTCMonth();
   const nowTotal = now.getFullYear() * 12 + now.getMonth();
 
+  // O mês corrente sempre entra, mesmo sem lançamentos ainda.
   const limitTotal = Math.max(endTotal, nowTotal);
 
-  for (let i = startTotal; i <= limitTotal; i++) {
-    const year = Math.floor(i / 12);
-    const month = i % 12;
-
-    const value = `${year}-${String(month + 1).padStart(2, "0")}`;
-    
-    const dateForLabel = new Date(year, month, 15);
-    const label = new Intl.DateTimeFormat("pt-BR", {
-      year: "numeric",
-      month: "long",
-    }).format(dateForLabel);
+  const months = [];
+  for (let index = startTotal; index <= limitTotal; index++) {
+    const year = Math.floor(index / 12);
+    const month = (index % 12) + 1;
 
     months.push({
-      value,
-      label: label.charAt(0).toUpperCase() + label.slice(1),
+      value: `${year}-${String(month).padStart(2, "0")}`,
+      label: formatMonthLabel(month, year),
     });
   }
 
   return months;
 }
 
-export function MonthSelector({
-  onChange,
-  currentValue,
-  minDate,
-  maxDate,
-}: MonthSelectorProps) {
-  const months = useMemo(
-    () => generateDynamicMonths(minDate, maxDate),
-    [minDate, maxDate],
-  );
+export function MonthSelector({ onChange, currentValue, minDate, maxDate }: MonthSelectorProps) {
+  const months = useMemo(() => generateMonths(minDate, maxDate), [minDate, maxDate]);
+  const currentIndex = months.findIndex((month) => month.value === currentValue);
 
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
+  const emit = (value: string) => {
     const [year, month] = value.split("-").map(Number);
     onChange(month, year);
   };
 
-  return (
-    <div className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm transition hover:border-gray-300">
-      <Calendar size={16} className="text-gray-500" />
+  const step = (delta: number) => {
+    const next = months[currentIndex + delta];
+    if (next) emit(next.value);
+  };
 
-      <select
-        id="month-select"
-        value={currentValue}
-        onChange={handleChange}
-        className="bg-transparent text-sm font-medium text-gray-700 focus:outline-none cursor-pointer"
+  return (
+    <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+      {/* Navegar mês a mês é o gesto mais comum — antes só havia o dropdown. */}
+      <button
+        onClick={() => step(-1)}
+        disabled={currentIndex <= 0}
+        aria-label="Mês anterior"
+        className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
       >
-        {months.map((m) => (
-          <option key={m.value} value={m.value}>
-            {m.label}
-          </option>
-        ))}
-      </select>
+        <ChevronLeft size={16} />
+      </button>
+
+      <div className="flex items-center gap-1.5 px-1">
+        <Calendar size={15} className="text-slate-400" />
+        <select
+          value={currentValue}
+          onChange={(event: React.ChangeEvent<HTMLSelectElement>) => emit(event.target.value)}
+          aria-label="Selecionar mês"
+          className="bg-transparent py-1 text-sm font-medium text-navy-800 outline-none cursor-pointer"
+        >
+          {months.map((month) => (
+            <option key={month.value} value={month.value}>
+              {month.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <button
+        onClick={() => step(1)}
+        disabled={currentIndex === -1 || currentIndex >= months.length - 1}
+        aria-label="Próximo mês"
+        className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
+      >
+        <ChevronRight size={16} />
+      </button>
     </div>
   );
 }
