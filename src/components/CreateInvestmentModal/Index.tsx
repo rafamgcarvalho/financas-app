@@ -85,7 +85,7 @@ export function CreateInvestmentModal({
       ">
         
         {/* Header - Padding reduzido levemente */}
-        <div className="flex items-center justify-between px-6 py-4 bg-linear-to-r from-blue-600 to-blue-700 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 bg-linear-to-r from-invest-500 to-invest-700 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 text-white rounded-lg">
               <DollarSign size={18} />
@@ -94,7 +94,7 @@ export function CreateInvestmentModal({
               <h3 className="text-base font-bold text-white leading-tight">
                 {isEdit ? 'Editar Aporte' : 'Novo Aporte'}
               </h3>
-              <p className="text-[10px] text-blue-100 uppercase font-bold tracking-widest opacity-90">
+              <p className="text-[10px] text-invest-100 uppercase font-bold tracking-widest opacity-90">
                 {goalTitle}
               </p>
             </div>
@@ -127,7 +127,7 @@ export function CreateInvestmentModal({
                     step="0.01"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:bg-white transition-all font-bold text-gray-900 text-base"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-400/30 focus:bg-white transition-all font-bold text-gray-900 text-base"
                     placeholder="0,00"
                   />
                 </div>
@@ -148,7 +148,7 @@ export function CreateInvestmentModal({
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 transition-all text-gray-700 text-sm font-medium"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-400/30 transition-all text-gray-700 text-sm font-medium"
                   />
                 </div>
               </div>
@@ -169,15 +169,15 @@ export function CreateInvestmentModal({
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 resize-none text-sm text-gray-700"
+                  className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-400/30 resize-none text-sm text-gray-700"
                 />
               </div>
             </div>
 
             {/* Categoria Fixa */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-blue-50/80 rounded-xl border border-blue-100/50">
-              <Tag size={14} className="text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-invest-50/80 rounded-xl border border-invest-100/50">
+              <Tag size={14} className="text-invest-500" />
+              <span className="text-[10px] font-bold text-invest-600 uppercase tracking-wider">
                 Categoria: Investimento
               </span>
             </div>
@@ -186,7 +186,7 @@ export function CreateInvestmentModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg hover:brightness-110 disabled:opacity-60 transition-all cursor-pointer text-sm"
+                className="w-full bg-linear-to-r from-invest-500 to-invest-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg hover:brightness-110 disabled:opacity-60 transition-all cursor-pointer text-sm"
               >
                 {loading ? "Processando..." : isEdit ? "Salvar Alterações" : "Confirmar Aporte"}
               </button>

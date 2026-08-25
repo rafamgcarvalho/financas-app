@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 
 const WS_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -25,8 +25,11 @@ export function useGoalSocket({ onGoalUpdated }: UseGoalSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
   const callbackRef = useRef(onGoalUpdated);
 
-  // Mantém a referência do callback atualizada sem reconectar
-  callbackRef.current = onGoalUpdated;
+  // Mantém a referência do callback atualizada sem reconectar o socket.
+  // Precisa ser em efeito: escrever em ref durante o render não é permitido.
+  useEffect(() => {
+    callbackRef.current = onGoalUpdated;
+  }, [onGoalUpdated]);
 
   useEffect(() => {
     const token =

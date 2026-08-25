@@ -213,7 +213,7 @@ export function GoalDetailsModal({
           ${
             isCompleted
               ? "bg-linear-to-r from-green-50 to-white"
-              : "bg-linear-to-r from-blue-50 to-white"
+              : "bg-linear-to-r from-invest-50 to-white"
           }`}
         >
           <div>
@@ -227,14 +227,14 @@ export function GoalDetailsModal({
                 ${
                   isCompleted
                     ? "bg-green-100 text-green-700"
-                    : "bg-blue-100 text-blue-700"
+                    : "bg-invest-100 text-invest-700"
                 }`}
               >
                 {status.label}
               </span>
 
               {isShared && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-bold uppercase">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-navy-100 text-navy-700 text-[10px] font-bold uppercase">
                   <Users size={12} />
                   Meta compartilhada
                 </span>
@@ -291,7 +291,7 @@ export function GoalDetailsModal({
                     ${
                       isCompleted
                         ? "bg-linear-to-br from-green-50 to-white border-green-200"
-                        : "bg-linear-to-br from-blue-50 to-white border-blue-200"
+                        : "bg-linear-to-br from-invest-50 to-white border-invest-100"
                     }`}
                   >
                     <div className="flex justify-between items-end mb-5">
@@ -300,7 +300,7 @@ export function GoalDetailsModal({
                           className={`text-4xl font-black ${
                             isCompleted
                               ? "text-green-700"
-                              : "text-blue-700"
+                              : "text-invest-700"
                           }`}
                         >
                           {progress.toFixed(1)}%
@@ -328,7 +328,7 @@ export function GoalDetailsModal({
                         ${
                           isCompleted
                             ? "bg-green-500"
-                            : "bg-blue-600"
+                            : "bg-brand-500"
                         }`}
                         style={{ width: `${progress}%` }}
                       />
@@ -376,7 +376,7 @@ export function GoalDetailsModal({
                     {isOwner && (
                       <button
                         onClick={() => setIsAddMemberOpen(!isAddMemberOpen)}
-                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-purple-600 hover:text-purple-700 transition cursor-pointer bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-full"
+                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-navy-600 hover:text-navy-700 transition cursor-pointer bg-navy-50 hover:bg-navy-100 px-3 py-1.5 rounded-full"
                       >
                         <UserPlus size={12} />
                         Adicionar
@@ -396,14 +396,14 @@ export function GoalDetailsModal({
                           value={memberUsername}
                           onChange={(e) => setMemberUsername(e.target.value)}
                           placeholder="Digite o username..."
-                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-300 focus:bg-white transition-all"
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-navy-500/30 focus:border-navy-400 focus:bg-white transition-all"
                           autoFocus
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={addingMember || !memberUsername.trim()}
-                        className="px-4 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 disabled:opacity-50 transition cursor-pointer shadow-sm"
+                        className="px-4 py-2.5 bg-navy-600 text-white text-xs font-bold rounded-xl hover:bg-navy-700 disabled:opacity-50 transition cursor-pointer shadow-sm"
                       >
                         {addingMember ? "..." : "Adicionar"}
                       </button>
@@ -429,7 +429,7 @@ export function GoalDetailsModal({
                           className="flex items-center justify-between p-3 rounded-xl bg-gray-50/70 hover:bg-gray-100/70 transition group"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-invest-500 to-navy-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
                               {member.name?.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -454,7 +454,7 @@ export function GoalDetailsModal({
                               className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
                                 member.role === "OWNER"
                                   ? "bg-amber-50 text-amber-600"
-                                  : "bg-blue-50 text-blue-600"
+                                  : "bg-invest-50 text-brand-500"
                               }`}
                             >
                               {member.role === "OWNER"

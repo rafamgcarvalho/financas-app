@@ -54,10 +54,10 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-100">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-canvas">
       {/* 🔵 Shape 1 */}
       <div
-        className="absolute w-[500px] h-[500px] bg-teal-600 rounded-full blur-3xl opacity-30"
+        className="absolute w-[500px] h-[500px] bg-brand-500 rounded-full blur-3xl opacity-30"
         style={{
           top: "-150px",
           left: "-150px",
@@ -67,7 +67,7 @@ export default function RegisterPage() {
 
       {/* 🔵 Shape 2 */}
       <div
-        className="absolute w-[450px] h-[450px] bg-blue-600 rounded-full blur-3xl opacity-25"
+        className="absolute w-[450px] h-[450px] bg-navy-600 rounded-full blur-3xl opacity-25"
         style={{
           bottom: "-150px",
           right: "-150px",
@@ -77,7 +77,7 @@ export default function RegisterPage() {
 
       {/* 🔵 Shape 3 */}
       <div
-        className="absolute w-[400px] h-[400px] bg-teal-300 rounded-full blur-3xl opacity-20"
+        className="absolute w-[400px] h-[400px] bg-brand-300 rounded-full blur-3xl opacity-20"
         style={{
           top: "40%",
           right: "-200px",
@@ -103,7 +103,7 @@ export default function RegisterPage() {
               placeholder="Seu nome"
               value={formData.name}
               onChange={handleChange}
-              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
+              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none"
             />
           </div>
 
@@ -118,7 +118,7 @@ export default function RegisterPage() {
               placeholder="Seu usuário"
               value={formData.username}
               onChange={handleChange}
-              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
+              className="w-full p-3 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none"
             />
           </div>
 
@@ -134,12 +134,12 @@ export default function RegisterPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full p-3 pr-12 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-[#42B7B2] focus:border-transparent outline-none"
+                className="w-full p-3 pr-12 rounded-xl border border-gray-300 bg-white/90 focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-teal-600 transition-colors cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-brand-500 transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -149,7 +149,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-[#42B7B2] text-white font-semibold transition hover:bg-teal-600 disabled:opacity-50 cursor-pointer"
+            className="w-full py-3 rounded-xl bg-brand-400 text-white font-semibold transition hover:bg-brand-500 disabled:opacity-50 cursor-pointer"
           >
             {loading ? "Cadastrando..." : "Cadastrar"}
           </button>
@@ -159,7 +159,7 @@ export default function RegisterPage() {
           Já tem uma conta?{" "}
           <Link
             href="/login"
-            className="text-[#42B7B2] font-medium hover:underline"
+            className="text-brand-500 font-medium hover:underline"
           >
             Entrar
           </Link>

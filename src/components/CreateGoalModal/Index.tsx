@@ -2,7 +2,7 @@
 "use client";
 
 import { CreateGoalForm, GoalModel } from "@/src/models/GoalModel";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { Container } from "../Container/Index";
 import { SpinLoader } from "../SpinLoader/Index";
@@ -28,29 +28,27 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
     status: "ACTIVE" as "ACTIVE" | "PAUSED" | "COMPLETED",
   };
 
-  const [formData, setFormData] = useState<CreateGoalForm>(initialFormState);
-
   const formatDateForInput = (dateStr?: string | Date) => {
     if (!dateStr) return "";
     return new Date(dateStr).toISOString().split("T")[0];
   };
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        title: initialData.title,
-        description: initialData.description || "",
-        targetValue: initialData.targetValue as any,
-        startDate: formatDateForInput(initialData.startDate),
-        targetDate: initialData.targetDate ? formatDateForInput(initialData.targetDate) : "",
-        type: initialData.type,
-        priority: initialData.priority,
-        status: initialData.status,
-      });
-    } else {
-      setFormData(initialFormState);
-    }
-  }, [initialData]);
+  // O modal é montado só ao abrir, então o estado inicial já reflete a meta em
+  // edição — não é preciso um efeito para sincronizar com as props.
+  const [formData, setFormData] = useState<CreateGoalForm>(() =>
+    initialData
+      ? {
+          title: initialData.title,
+          description: initialData.description || "",
+          targetValue: initialData.targetValue as any,
+          startDate: formatDateForInput(initialData.startDate),
+          targetDate: initialData.targetDate ? formatDateForInput(initialData.targetDate) : "",
+          type: initialData.type,
+          priority: initialData.priority,
+          status: initialData.status,
+        }
+      : initialFormState,
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -87,7 +85,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
           : null,
       };
 
-      let response;
+      let response: { data?: Partial<GoalModel> } | undefined;
 
       if (initialData?.id) {
         response = await api.patch(`/goals/${initialData.id}`, payload);
@@ -101,7 +99,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
         const optimisticData = {
             ...initialData,
             ...payload,
-            ...(response.data || {})
+            ...(response?.data || {})
         };
         await onSuccess(optimisticData as GoalModel);
       }
@@ -158,7 +156,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
               value={formData.title}
               onChange={handleChange}
               placeholder="Ex: Viagem, Reserva de emergência..."
-              className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
           </div>
 
@@ -170,7 +168,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
               onChange={handleChange}
               placeholder="Detalhes sobre essa meta"
               rows={2}
-              className="rounded-lg border border-gray-300 px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-gray-300 px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
           </div>
 
@@ -185,7 +183,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
                 value={formData.targetValue}
                 onChange={handleChange}
                 placeholder="0,00"
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </div>
 
@@ -196,7 +194,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
                 required
                 value={formData.type}
                 onChange={handleChange}
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
               >
                 <option value="" disabled>Selecione</option>
                 <option value="SHORT">Curto prazo</option>
@@ -215,7 +213,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
                 required
                 value={formData.startDate}
                 onChange={handleChange}
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </div>
 
@@ -226,7 +224,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
                 name="targetDate"
                 value={formData.targetDate}
                 onChange={handleChange}
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </div>
           </div>
@@ -238,7 +236,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
               required
               value={formData.priority}
               onChange={handleChange}
-              className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
             >
               <option value="" disabled>Selecione a urgência</option>
               <option value="DESIRABLE">Baixa</option>
@@ -258,7 +256,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition cursor-pointer shadow-md shadow-blue-100"
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 transition cursor-pointer shadow-md shadow-brand-100"
           >
             {initialData ? "Salvar alterações" : "Criar meta"}
           </button>
