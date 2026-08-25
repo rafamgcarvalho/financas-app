@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Container } from "../Container/Index";
 import { TransactionsList } from "../TransactionsList/Index";
+import { OutOfPeriodNotice } from "../OutOfPeriodNotice/Index";
 import {
   PeriodSelector,
   periodLabel,
@@ -117,6 +118,13 @@ export function TransactionsPageView({ type, title, subtitle }: TransactionsPage
           Nova {theme.label.toLowerCase()}
         </button>
       </div>
+
+      <OutOfPeriodNotice
+        months={months}
+        onGoToMonth={(month, year) =>
+          setPeriod({ preset: "custom", from: { month, year }, to: { month, year } })
+        }
+      />
 
       <div className="mb-5">
         <PeriodSelector

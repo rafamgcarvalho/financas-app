@@ -14,7 +14,7 @@ type TransactionModalProps = {
   /** Preenchido = modo edição; o seletor de tipo some. */
   transaction?: Transaction | null;
   goalId?: string;
-  onSaved: () => void;
+  onSaved: (saved: { title: string; date: string }) => void;
 };
 
 const TYPES: TransactionKind[] = ["income", "expense", "investment"];

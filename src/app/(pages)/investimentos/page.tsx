@@ -7,6 +7,7 @@ import { CreateGoalModal } from "@/src/components/CreateGoalModal/Index";
 import { GoalCard } from "@/src/components/GoalCard/Index";
 import { GoalDetailsModal } from "@/src/components/GoalDetailsModal/Index";
 import { TransactionsList } from "@/src/components/TransactionsList/Index";
+import { OutOfPeriodNotice } from "@/src/components/OutOfPeriodNotice/Index";
 import {
   PeriodSelector,
   periodsBetween,
@@ -130,6 +131,13 @@ export default function InvestimentosPage() {
           </button>
         </div>
       </div>
+
+      <OutOfPeriodNotice
+        months={months}
+        onGoToMonth={(month, year) =>
+          setPeriod({ preset: "custom", from: { month, year }, to: { month, year } })
+        }
+      />
 
       <section className="mb-6">
         <div className="mb-4 flex flex-wrap items-baseline gap-x-6 gap-y-1">

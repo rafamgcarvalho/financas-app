@@ -7,6 +7,7 @@ import { MonthSelector } from "../MonthSelector/Index";
 import { SummaryCard } from "../SummaryCard/Index";
 import { BudgetPanel } from "../BudgetPanel/Index";
 import { TransactionsList } from "../TransactionsList/Index";
+import { OutOfPeriodNotice } from "../OutOfPeriodNotice/Index";
 import { FinancialChart } from "../FinancialChart/Index";
 import { MonthlyComparisonChart } from "../MonthlyComparisonChart/Index";
 import { CategoryPieChart } from "../CategoryPieChart/Index";
@@ -156,6 +157,11 @@ export function DashboardContent() {
           maxDate={range.maxDate}
         />
       </div>
+
+      <OutOfPeriodNotice
+        months={[selectedDate]}
+        onGoToMonth={(month, year) => setSelectedDate({ month, year })}
+      />
 
       {loading ? (
         <CardsSkeleton />

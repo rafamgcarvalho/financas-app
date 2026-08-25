@@ -21,7 +21,15 @@ type TransactionsContextValue = {
   refreshToken: number;
   /** Avisa o app que os dados mudaram (exclusão, importação etc.). */
   notifyChange: () => void;
+  /**
+   * Último lançamento gravado. As telas usam isto para perceber quando o
+   * lançamento caiu fora do período que está sendo exibido.
+   */
+  lastSaved: SavedTransaction | null;
+  dismissLastSaved: () => void;
 };
+
+export type SavedTransaction = { title: string; date: string; token: number };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
 
@@ -48,6 +56,7 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
   const [isOpen, setIsOpen] = useState(false);
   const [options, setOptions] = useState<OpenOptions>({});
   const [refreshToken, setRefreshToken] = useState(0);
+  const [lastSaved, setLastSaved] = useState<SavedTransaction | null>(null);
   // Incrementa a cada abertura para remontar o modal com o estado inicial certo.
   const [openCount, setOpenCount] = useState(0);
 
@@ -59,6 +68,14 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
 
   const closeTransaction = useCallback(() => setIsOpen(false), []);
   const notifyChange = useCallback(() => setRefreshToken((prev) => prev + 1), []);
+  const dismissLastSaved = useCallback(() => setLastSaved(null), []);
+
+  const handleSaved = useCallback((saved: { title: string; date: string }) => {
+    setRefreshToken((prev) => {
+      setLastSaved({ ...saved, token: prev + 1 });
+      return prev + 1;
+    });
+  }, []);
 
   const duplicateTransaction = useCallback(
     (transaction: Transaction) => {
@@ -78,6 +95,9 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
       if (event.key !== "n" && event.key !== "N") return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (isTypingTarget(event.target) || isOpen) return;
+      // Qualquer diálogo aberto (confirmação de exclusão, detalhes da meta)
+      // tem prioridade — abrir o lançamento por cima empilhava dois modais.
+      if (document.querySelector("[role='dialog'], [role='alertdialog']")) return;
 
       event.preventDefault();
       openTransaction();
@@ -88,8 +108,24 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
   }, [isOpen, openTransaction]);
 
   const value = useMemo(
-    () => ({ openTransaction, duplicateTransaction, closeTransaction, refreshToken, notifyChange }),
-    [openTransaction, duplicateTransaction, closeTransaction, refreshToken, notifyChange],
+    () => ({
+      openTransaction,
+      duplicateTransaction,
+      closeTransaction,
+      refreshToken,
+      notifyChange,
+      lastSaved,
+      dismissLastSaved,
+    }),
+    [
+      openTransaction,
+      duplicateTransaction,
+      closeTransaction,
+      refreshToken,
+      notifyChange,
+      lastSaved,
+      dismissLastSaved,
+    ],
   );
 
   return (
@@ -103,7 +139,7 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
         initialType={options.type}
         transaction={options.transaction}
         goalId={options.goalId}
-        onSaved={notifyChange}
+        onSaved={handleSaved}
       />
     </TransactionsContext.Provider>
   );
