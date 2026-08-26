@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Target } from "lucide-react";
 import { Container } from "@/src/components/Container/Index";
 import { CreateGoalModal } from "@/src/components/CreateGoalModal/Index";
 import { GoalCard } from "@/src/components/GoalCard/Index";
-import { GoalDetailsModal } from "@/src/components/GoalDetailsModal/Index";
 import { TransactionsList } from "@/src/components/TransactionsList/Index";
 import { OutOfPeriodNotice } from "@/src/components/OutOfPeriodNotice/Index";
 import {
@@ -34,11 +34,11 @@ function GoalsSkeleton() {
 }
 
 export default function InvestimentosPage() {
+  const router = useRouter();
   const { openTransaction, duplicateTransaction, refreshToken, notifyChange } = useTransactions();
 
   const [goals, setGoals] = useState<GoalModel[]>([]);
   const [isCreateGoalOpen, setIsCreateGoalOpen] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<GoalModel | null>(null);
   const [loading, setLoading] = useState(true);
   // Histórico completo de aportes: o ritmo de cada meta é medido sobre ele,
   // não sobre o período que está sendo exibido na lista abaixo.
@@ -58,11 +58,6 @@ export default function InvestimentosPage() {
 
       setGoals(newData);
 
-      // Mantém o modal aberto em sincronia com os dados recarregados.
-      setSelectedGoal((prev) => {
-        if (!prev) return null;
-        return newData.find((goal) => goal.id === prev.id) ?? prev;
-      });
     } catch (error) {
       console.error("Erro ao carregar metas", error);
     } finally {
@@ -104,9 +99,6 @@ export default function InvestimentosPage() {
       ),
     );
 
-    setSelectedGoal((prev) =>
-      prev && prev.id === payload.goalId ? { ...prev, currentValue: Number(payload.currentValue) } : prev,
-    );
   }, []);
 
   useGoalSocket({ onGoalUpdated: handleGoalUpdated });
@@ -196,7 +188,7 @@ export default function InvestimentosPage() {
                 members={goal.members}
                 targetDate={goal.targetDate}
                 projection={projections.get(goal.id)}
-                onClick={() => setSelectedGoal(goal)}
+                onClick={() => router.push(`/investimentos/${goal.id}`)}
               />
             ))}
           </div>
@@ -243,13 +235,6 @@ export default function InvestimentosPage() {
         <CreateGoalModal onClose={() => setIsCreateGoalOpen(false)} onSuccess={() => fetchGoals(true)} />
       )}
 
-      {selectedGoal && (
-        <GoalDetailsModal
-          goal={selectedGoal}
-          onClose={() => setSelectedGoal(null)}
-          onRefresh={() => fetchGoals(true)}
-        />
-      )}
     </Container>
   );
 }
