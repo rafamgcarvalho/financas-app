@@ -25,6 +25,8 @@ import { ConfirmDialog } from "../ConfirmDialog/Index";
 import { CreateGoalModal } from "../CreateGoalModal/Index";
 import { TransactionsList } from "../TransactionsList/Index";
 import { CreateInvestmentModal } from "../CreateInvestmentModal/Index";
+import { GoalProjection } from "../GoalProjection/Index";
+import { projectGoal } from "@/src/lib/goalProjection";
 
 type GoalDetailsModalProps = {
   goal: GoalModel;
@@ -46,6 +48,7 @@ export function GoalDetailsModal({
   const [goalToDelete, setGoalToDelete] = useState<any | null>();
   const [transactionsKey, setTransactionsKey] = useState(0);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
+  const [contributions, setContributions] = useState<any[]>([]);
 
   // Estado para adicionar membro
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -55,6 +58,14 @@ export function GoalDetailsModal({
   // Estado para remover membro
   const [memberToRemove, setMemberToRemove] = useState<GoalMember | null>(null);
   const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false);
+
+  // Aportes desta meta, para medir o ritmo e projetar a conclusão.
+  useEffect(() => {
+    api
+      .get(`/transactions?goalId=${initialGoal.id}`)
+      .then((data) => setContributions(Array.isArray(data) ? data : []))
+      .catch((error) => console.error("Erro ao carregar aportes da meta", error));
+  }, [initialGoal.id, transactionsKey]);
 
   useEffect(() => {
     setCurrentGoal(initialGoal);
@@ -355,6 +366,11 @@ export function GoalDetailsModal({
                     value={formatDate(currentGoal.targetDate)}
                   />
                 </div>
+
+                <GoalProjection
+                  projection={projectGoal(currentGoal, contributions)}
+                  variant="full"
+                />
 
                 {currentGoal.description && (
                   <div className="p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">

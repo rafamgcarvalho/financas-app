@@ -20,6 +20,8 @@ import { api } from "@/src/services/api";
 import { useGoalSocket, GoalUpdatedPayload } from "@/src/hooks/useGoalSocket";
 import { useTransactions } from "@/src/contexts/TransactionsProvider";
 import { formatCurrency } from "@/src/utils/formatCurrency";
+import { groupByGoal, projectGoal, type GoalProjection } from "@/src/lib/goalProjection";
+import type { Transaction } from "@/src/models/TransactionModel";
 
 function GoalsSkeleton() {
   return (
@@ -38,6 +40,9 @@ export default function InvestimentosPage() {
   const [isCreateGoalOpen, setIsCreateGoalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<GoalModel | null>(null);
   const [loading, setLoading] = useState(true);
+  // Histórico completo de aportes: o ritmo de cada meta é medido sobre ele,
+  // não sobre o período que está sendo exibido na lista abaixo.
+  const [contributions, setContributions] = useState<Transaction[]>([]);
 
   const [period, setPeriod] = useState<{ preset: PeriodPreset; from: Period; to: Period }>(() => ({
     preset: "6m",
@@ -69,6 +74,24 @@ export default function InvestimentosPage() {
     fetchGoals();
   }, [fetchGoals]);
 
+  useEffect(() => {
+    api
+      .get<Transaction[]>("/transactions?type=INVESTMENT")
+      .then((data) => setContributions(Array.isArray(data) ? data : []))
+      .catch((error) => console.error("Erro ao carregar histórico de aportes", error));
+  }, [refreshToken]);
+
+  const projections = useMemo(() => {
+    const byGoal = groupByGoal(contributions);
+    const result = new Map<string, GoalProjection>();
+
+    for (const goal of goals) {
+      result.set(goal.id, projectGoal(goal, byGoal.get(goal.id) ?? []));
+    }
+
+    return result;
+  }, [goals, contributions]);
+
   // Aporte lançado pelo modal global também mexe no progresso das metas.
   useEffect(() => {
     if (refreshToken > 0) fetchGoals(true);
@@ -98,8 +121,9 @@ export default function InvestimentosPage() {
       target: goals.reduce((acc, goal) => acc + Number(goal.targetValue || 0), 0),
       active: active.length,
       completed: goals.filter((goal) => goal.status === "COMPLETED").length,
+      overdue: goals.filter((goal) => projections.get(goal.id)?.status === "overdue").length,
     };
-  }, [goals]);
+  }, [goals, projections]);
 
   return (
     <Container>
@@ -146,6 +170,12 @@ export default function InvestimentosPage() {
             <p className="text-xs text-slate-500">
               <strong className="text-invest-600">{formatCurrency(summary.invested)}</strong> de{" "}
               {formatCurrency(summary.target)} · {summary.active} ativas · {summary.completed} concluídas
+              {summary.overdue > 0 && (
+                <strong className="text-expense-600">
+                  {" · "}
+                  {summary.overdue} atrasada{summary.overdue > 1 ? "s" : ""}
+                </strong>
+              )}
             </p>
           )}
         </div>
@@ -164,6 +194,8 @@ export default function InvestimentosPage() {
                 investedValue={goal.currentValue}
                 status={goal.status}
                 members={goal.members}
+                targetDate={goal.targetDate}
+                projection={projections.get(goal.id)}
                 onClick={() => setSelectedGoal(goal)}
               />
             ))}

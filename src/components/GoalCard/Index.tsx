@@ -1,6 +1,9 @@
-import { Users } from "lucide-react";
+import { CalendarClock, Users } from "lucide-react";
 import { GoalMember } from "@/src/models/GoalModel";
 import { formatCurrency } from "@/src/utils/formatCurrency";
+import { formatMonthLabel } from "@/src/lib/dates";
+import { GoalProjection } from "../GoalProjection/Index";
+import type { GoalProjection as Projection } from "@/src/lib/goalProjection";
 
 type GoalStatus = "ACTIVE" | "PAUSED" | "COMPLETED";
 
@@ -10,10 +13,22 @@ type GoalCardProps = {
   investedValue: number;
   status: GoalStatus;
   members?: GoalMember[];
+  targetDate?: string;
+  /** Quando presente, o card mostra ritmo e previsão de conclusão. */
+  projection?: Projection;
   onClick?: () => void;
 };
 
-const STATUS_CONFIG: Record<GoalStatus, { label: string; badge: string; bar: string; accent: string }> = {
+const STATUS_CONFIG: Record<
+  GoalStatus | "OVERDUE",
+  { label: string; badge: string; bar: string; accent: string }
+> = {
+  OVERDUE: {
+    label: "Atrasada",
+    badge: "bg-expense-50 text-expense-700 ring-expense-100",
+    bar: "bg-expense-500",
+    accent: "bg-expense-500",
+  },
   ACTIVE: {
     label: "Ativa",
     badge: "bg-invest-50 text-invest-700 ring-invest-100",
@@ -40,6 +55,8 @@ export function GoalCard({
   investedValue,
   status,
   members = [],
+  targetDate,
+  projection,
   onClick,
 }: GoalCardProps) {
   const total = Number(totalValue) || 0;
@@ -47,8 +64,19 @@ export function GoalCard({
   const progress = total > 0 ? Math.min((invested / total) * 100, 100) : 0;
   const remaining = Math.max(total - invested, 0);
 
-  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.ACTIVE;
+  // Uma meta pode vencer sem que ninguém mude o status na mão — o prazo
+  // estourado precisa aparecer, senão ela segue "ativa" para sempre.
+  const isOverdue = projection?.status === "overdue";
+  const config = isOverdue
+    ? STATUS_CONFIG.OVERDUE
+    : (STATUS_CONFIG[status] ?? STATUS_CONFIG.ACTIVE);
   const isShared = members.length > 1;
+
+  const alvo = targetDate ? new Date(targetDate) : null;
+  const alvoLabel =
+    alvo && !Number.isNaN(alvo.getTime())
+      ? formatMonthLabel(alvo.getUTCMonth() + 1, alvo.getUTCFullYear()).toLowerCase()
+      : null;
 
   return (
     <button
@@ -104,6 +132,13 @@ export function GoalCard({
             de {formatCurrency(total)}
             {remaining > 0 && ` · faltam ${formatCurrency(remaining)}`}
           </p>
+
+          {alvoLabel && (
+            <p className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400">
+              <CalendarClock size={12} />
+              alvo em {alvoLabel}
+            </p>
+          )}
         </div>
 
         <div className="mt-5">
@@ -118,6 +153,12 @@ export function GoalCard({
               style={{ width: `${progress}%` }}
             />
           </div>
+
+          {projection && (
+            <div className="mt-3 border-t border-slate-100 pt-3">
+              <GoalProjection projection={projection} />
+            </div>
+          )}
         </div>
       </div>
     </button>
