@@ -14,6 +14,8 @@ type SummaryCardProps = {
   previousAmount?: number;
   previousLabel?: string;
   variant?: "hero" | "compact";
+  /** Linha de apoio no card em destaque (ex.: quanto foi guardado). */
+  footer?: React.ReactNode;
 };
 
 /** Uma variação é "boa" quando aumenta receita/investimento ou reduz despesa. */
@@ -111,6 +113,7 @@ export function SummaryCard({
   previousAmount,
   previousLabel,
   variant = "compact",
+  footer,
 }: SummaryCardProps) {
   const theme = type === "balance" ? null : TYPE_THEME[type];
   const Icon = theme?.icon ?? Wallet;
@@ -146,6 +149,10 @@ export function SummaryCard({
             <p className="mt-3 inline-flex rounded-lg bg-expense-500/20 px-2.5 py-1 text-xs font-medium text-expense-100">
               Você gastou mais do que recebeu neste mês
             </p>
+          )}
+
+          {footer && (
+            <div className="mt-3 border-t border-white/10 pt-3 text-xs text-white/70">{footer}</div>
           )}
         </div>
       </div>

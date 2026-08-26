@@ -23,9 +23,21 @@ type Totals = {
   income: number;
   expense: number;
   investment: number;
+  /** Receitas menos despesas: o que o mês de fato rendeu. */
   balance: number;
+  /** O que sobrou e ainda não foi guardado. */
+  unallocated: number;
+  /** Quanto da renda virou investimento, de 0 a 1. */
+  savingsRate: number | null;
 };
 
+/**
+ * Investimento não entra na conta do saldo.
+ *
+ * Despesa destrói dinheiro; investimento muda de lugar — o patrimônio não cai
+ * quando se guarda. Somando os dois, quem investe o que sobra via o saldo dar
+ * zero todo mês, e um número que é sempre zero não mede nada.
+ */
 function sumTotals(transactions: Transaction[]): Totals {
   const totals = { income: 0, expense: 0, investment: 0 };
 
@@ -33,7 +45,14 @@ function sumTotals(transactions: Transaction[]): Totals {
     totals[toKind(transaction.type)] += Number(transaction.amount);
   }
 
-  return { ...totals, balance: totals.income - (totals.expense + totals.investment) };
+  const balance = totals.income - totals.expense;
+
+  return {
+    ...totals,
+    balance,
+    unallocated: balance - totals.investment,
+    savingsRate: totals.income > 0 ? totals.investment / totals.income : null,
+  };
 }
 
 function CardsSkeleton() {
@@ -127,7 +146,7 @@ export function DashboardContent() {
 
     return {
       isPartial,
-      projectedBalance: isPartial ? totals.income - (totals.expense + totals.investment) / progress : null,
+      projectedBalance: isPartial ? totals.income - totals.expense / progress : null,
       topCategory: topCategory
         ? { category: findCategory(topCategory[0]), amount: topCategory[1] }
         : null,
@@ -169,11 +188,22 @@ export function DashboardContent() {
         <div className="grid gap-4 lg:grid-cols-3">
           <SummaryCard
             variant="hero"
-            title="Saldo do mês"
+            title="Sobrou este mês"
             amount={totals.balance}
             type="balance"
             previousAmount={previousTotals?.balance}
             previousLabel={previousLabel}
+            footer={
+              totals.investment > 0 || totals.balance !== 0 ? (
+                <>
+                  <strong>{formatCurrency(totals.investment)}</strong> guardados
+                  {totals.savingsRate !== null && ` · ${Math.round(totals.savingsRate * 100)}% da renda`}
+                  <span className="mt-0.5 block text-white/50">
+                    {formatCurrency(totals.unallocated)} livre na conta
+                  </span>
+                </>
+              ) : null
+            }
           />
 
           <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
