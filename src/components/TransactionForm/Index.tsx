@@ -104,6 +104,19 @@ export function TransactionForm({
   // Ao editar uma parcela: alterar só ela ou o parcelamento inteiro.
   const [updateAll, setUpdateAll] = useState(false);
 
+  /*
+   * Estado próprio, e não derivado de form.installments: enquanto o usuário
+   * apaga o campo para digitar "12", ele passa por "" e por "1". Derivar dali
+   * fazia a seção inteira colapsar para "À vista" no meio da digitação.
+   */
+  const [repetition, setRepetition] = useState<RepetitionKey>(() =>
+    initialData?.isRecurring
+      ? "recurring"
+      : Number(initialData?.installments ?? 1) > 1
+        ? "installments"
+        : "single",
+  );
+
   const amountRef = useRef<HTMLInputElement>(null);
   // Se o usuário escolheu a categoria na mão, não sobrescrevemos com a sugestão.
   const categoryTouched = useRef(Boolean(initialData));
@@ -157,7 +170,10 @@ export function TransactionForm({
     if (!form.date) next.date = "Informe a data";
     // Sem categoria padrão: escolher errado em silêncio é pior que um passo a mais.
     if (!form.category) next.category = "Escolha uma categoria";
-    if (!form.recurring && Number(form.installments) > 1 && (!Number.isInteger(installments) || installments < 2 || installments > 48))
+    if (
+      repetition === "installments" &&
+      (!Number.isInteger(installments) || installments < 2 || installments > 48)
+    )
       next.installments = "Entre 2 e 48 parcelas";
 
     setErrors(next);
@@ -184,8 +200,8 @@ export function TransactionForm({
       date: inputDateToISO(form.date),
       category: form.category,
       type: type.toUpperCase() as TransactionType,
-      isRecurring: form.recurring,
-      installments: form.recurring ? 1 : Number(form.installments),
+      isRecurring: repetition === "recurring",
+      installments: repetition === "installments" ? Number(form.installments) : 1,
       ...(goalId ? { goalId } : {}),
     };
 
@@ -211,6 +227,7 @@ export function TransactionForm({
       if (keepOpenRef.current) {
         // "Salvar e novo": mantém data e categoria, limpa o resto.
         setForm((prev) => ({ ...emptyForm(), date: prev.date, category: prev.category }));
+        setRepetition("single");
         setSuggestions(getSuggestions(type));
         amountRef.current?.focus();
       } else {
@@ -226,25 +243,12 @@ export function TransactionForm({
 
   const amountPreview = digitsToNumber(form.amountDigits);
 
-  // A repetição é derivada do formulário, não guardada à parte — assim os
-  // chips e o payload nunca discordam entre si.
-  const repetition: RepetitionKey = form.recurring
-    ? "recurring"
-    : Number(form.installments) > 1
-      ? "installments"
-      : "single";
-
-  const setRepetition = (key: RepetitionKey) => {
-    setForm((prev) => {
-      if (key === "recurring") return { ...prev, recurring: true, installments: "1" };
-      if (key === "single") return { ...prev, recurring: false, installments: "1" };
-      // Ao escolher "Parcelado", 1 parcela não faria sentido.
-      return {
-        ...prev,
-        recurring: false,
-        installments: Number(prev.installments) > 1 ? prev.installments : "2",
-      };
-    });
+  const handleRepetitionChange = (key: RepetitionKey) => {
+    setRepetition(key);
+    // Ao escolher "Parcelado", uma parcela só não faria sentido.
+    if (key === "installments" && Number(form.installments) < 2) {
+      update("installments", "2");
+    }
     setErrors((prev) => ({ ...prev, installments: "" }));
   };
 
@@ -293,7 +297,11 @@ export function TransactionForm({
     // min-height:auto por padrão e se recusa a encolher abaixo do conteúdo,
     // então o overflow-y-auto de dentro nunca entrava em ação — o formulário
     // crescia, o modal cortava, e o rodapé com o botão Salvar saía da tela.
-    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+    // noValidate: a validação nativa do navegador bloqueia o submit com uma
+    // mensagem em inglês e, se o campo estiver fora da área visível do modal,
+    // não mostra nada — o formulário parece travado. Quem valida é o validate()
+    // abaixo, que escreve o erro ao lado do campo.
+    <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-6">
         {/* Atalhos dos lançamentos mais frequentes */}
         {suggestions.length > 0 && (
@@ -490,7 +498,7 @@ export function TransactionForm({
                   <button
                     key={option.key}
                     type="button"
-                    onClick={() => setRepetition(option.key)}
+                    onClick={() => handleRepetitionChange(option.key)}
                     className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-medium transition cursor-pointer sm:text-sm ${
                       active
                         ? "border-navy-700 bg-navy-700 text-white"
