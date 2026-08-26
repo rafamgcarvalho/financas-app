@@ -99,22 +99,54 @@ export function GoalProjection({ projection, variant = "compact", goal }: GoalPr
       ) : (
         <div className="mt-3 space-y-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-xs text-slate-500">Ritmo atual</span>
+            <span className="text-xs text-slate-500">
+              {projection.paceSource === "plan" ? "Planejado" : "Ritmo atual"}
+            </span>
             <span className="text-sm font-semibold text-navy-800">
               {projection.monthlyPace ? `${formatCurrency(projection.monthlyPace)}/mês` : "sem aportes"}
             </span>
           </div>
 
-          {projection.monthlyPace ? (
+          {projection.paceSource === "observed" && projection.monthlyPace ? (
             <p className="text-[11px] text-slate-400">
-              média dos últimos {projection.paceWindowMonths}{" "}
+              mediana dos últimos {projection.paceWindowMonths}{" "}
               {projection.paceWindowMonths === 1 ? "mês" : "meses"}
             </p>
           ) : null}
 
+          {/* Com plano declarado, o histórico vira aferição: mostra se o plano
+              vem sendo cumprido sem que um mês fora da curva mexa na data. */}
+          {projection.paceSource === "plan" && projection.observedPace !== null && (
+            <div className="rounded-xl bg-slate-50 px-3 py-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[11px] text-slate-500">
+                  Ritmo real ({projection.paceWindowMonths}{" "}
+                  {projection.paceWindowMonths === 1 ? "mês" : "meses"})
+                </span>
+                <span className="text-xs font-semibold text-slate-700">
+                  {formatCurrency(projection.observedPace)}/mês
+                </span>
+              </div>
+
+              <p
+                className={`mt-1 text-[11px] font-medium ${
+                  projection.observedPace >= (projection.monthlyPace ?? 0)
+                    ? "text-income-600"
+                    : "text-amber-600"
+                }`}
+              >
+                {projection.observedPace >= (projection.monthlyPace ?? 0)
+                  ? "Você está cumprindo o plano."
+                  : "Abaixo do planejado — a projeção assume o plano."}
+              </p>
+            </div>
+          )}
+
           {projection.finishMonth && (
             <div className="flex items-baseline justify-between gap-3 border-t border-slate-100 pt-3">
-              <span className="text-xs text-slate-500">Nesse ritmo, conclui em</span>
+              <span className="text-xs text-slate-500">
+              {projection.paceSource === "plan" ? "Nesse plano, conclui em" : "Nesse ritmo, conclui em"}
+            </span>
               <span className="text-sm font-semibold text-navy-800">
                 {monthLabel(projection.finishMonth)}
               </span>
@@ -181,7 +213,10 @@ export function GoalProjection({ projection, variant = "compact", goal }: GoalPr
                       {(
                         [
                           { key: "target", label: "Para bater o alvo" },
-                          { key: "pace", label: "No ritmo atual" },
+                          {
+                            key: "pace",
+                            label: projection.paceSource === "plan" ? "No plano" : "No ritmo atual",
+                          },
                         ] as const
                       ).map((option) => (
                         <button
@@ -203,7 +238,11 @@ export function GoalProjection({ projection, variant = "compact", goal }: GoalPr
                   <p className="mb-2 text-[11px] text-slate-500">
                     {schedule.rows.length} {schedule.rows.length === 1 ? "aporte" : "aportes"} de{" "}
                     <strong className="text-navy-800">{formatCurrency(schedule.monthly)}</strong>
-                    {effectiveMode === "target" ? " para chegar na data-alvo" : " mantendo o ritmo atual"}
+                    {effectiveMode === "target"
+                      ? " para chegar na data-alvo"
+                      : projection.paceSource === "plan"
+                        ? " mantendo o plano"
+                        : " mantendo o ritmo atual"}
                   </p>
 
                   <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200">

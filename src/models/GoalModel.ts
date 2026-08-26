@@ -13,6 +13,8 @@ export type GoalModel = {
   description?: string;
   targetValue: number;
   currentValue: number;
+  /** Aporte mensal pretendido — base da projeção quando informado. */
+  monthlyPlan?: number | string | null;
   startDate: string;
   targetDate: string;
   type: "SHORT" | "MEDIUM" | "LONG";
@@ -26,6 +28,7 @@ export type CreateGoalForm = {
   title: string;
   description?: string;
   targetValue: number;
+  monthlyPlan?: number | null;
   startDate: string;
   targetDate?: string;
   type: "SHORT" | "MEDIUM" | "LONG";

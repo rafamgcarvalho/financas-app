@@ -23,8 +23,15 @@ export type GoalStatus =
 export type GoalProjection = {
   status: GoalStatus;
   remaining: number;
-  /** Média mensal de aportes na janela considerada. */
+  /**
+   * Quanto a projeção assume por mês: o plano declarado, se houver; senão a
+   * mediana dos aportes recentes.
+   */
   monthlyPace: number | null;
+  /** De onde saiu o número acima. */
+  paceSource: "plan" | "observed";
+  /** Ritmo efetivamente observado, para aferir se o plano vem sendo cumprido. */
+  observedPace: number | null;
   /** Quantos meses a janela abrangeu — o número precisa ser interpretável. */
   paceWindowMonths: number;
   /** Meses até concluir mantendo o ritmo atual. */
@@ -37,6 +44,16 @@ export type GoalProjection = {
   requiredMonthly: number | null;
 };
 
+/** Mediana de uma série — resistente a um mês fora da curva. */
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = sorted.length >> 1;
+
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 const monthIndex = (date: Date) => date.getUTCFullYear() * 12 + date.getUTCMonth();
 
 const fromIndex = (index: number) => ({
@@ -45,7 +62,13 @@ const fromIndex = (index: number) => ({
 });
 
 export function projectGoal(
-  goal: { targetValue: number | string; currentValue: number | string; targetDate?: string },
+  goal: {
+    targetValue: number | string;
+    currentValue: number | string;
+    targetDate?: string;
+    /** Aporte mensal pretendido. Tem precedência sobre o histórico. */
+    monthlyPlan?: number | string | null;
+  },
   contributions: Transaction[],
   now = new Date(),
 ): GoalProjection {
@@ -58,10 +81,14 @@ export function projectGoal(
   const targetIndex = targetDate && !Number.isNaN(targetDate.getTime()) ? monthIndex(targetDate) : null;
   const targetMonth = targetIndex === null ? null : fromIndex(targetIndex);
 
+  const plan = Number(goal.monthlyPlan) || null;
+
   const base = {
     remaining,
     paceWindowMonths: 0,
-    monthlyPace: null,
+    monthlyPace: plan,
+    paceSource: (plan ? "plan" : "observed") as "plan" | "observed",
+    observedPace: null,
     monthsToFinish: null,
     finishMonth: null,
     targetMonth,
@@ -76,8 +103,8 @@ export function projectGoal(
     .map((item) => monthIndex(new Date(item.date)))
     .filter((index) => !Number.isNaN(index));
 
-  if (months.length === 0) {
-    // Sem aporte não há ritmo. Ainda assim dá para dizer o que seria preciso.
+  // Sem histórico e sem plano não há o que projetar.
+  if (months.length === 0 && !plan) {
     const monthsToTarget = targetIndex === null ? null : Math.max(targetIndex - nowIndex, 0);
 
     return {
@@ -88,17 +115,28 @@ export function projectGoal(
   }
 
   // A janela nunca começa antes do primeiro aporte: dividir por 6 meses uma meta
-  // criada há 2 subestimaria o ritmo pela metade.
-  const firstIndex = Math.min(...months);
+  // criada há 2 subestimaria o ritmo pela metade. Sem aportes, a janela é o mês
+  // corrente — só o plano sustenta a projeção.
+  const firstIndex = months.length > 0 ? Math.min(...months) : nowIndex;
   const windowStart = Math.max(firstIndex, nowIndex - (PACE_WINDOW_MONTHS - 1));
   const paceWindowMonths = Math.max(nowIndex - windowStart + 1, 1);
 
-  const contributedInWindow = contributions.reduce((total, item) => {
-    const index = monthIndex(new Date(item.date));
-    return index >= windowStart && index <= nowIndex ? total + Number(item.amount) : total;
-  }, 0);
+  // Mediana, não média: um 13º de R$ 5.000 entre aportes de R$ 900 puxava a
+  // média para R$ 1.583 e a meta parecia 10 meses mais perto do que está.
+  // Meses sem aporte entram como zero — pular mês é ritmo mais lento, de fato.
+  const perMonth = new Array<number>(paceWindowMonths).fill(0);
 
-  const monthlyPace = contributedInWindow / paceWindowMonths;
+  for (const item of contributions) {
+    const index = monthIndex(new Date(item.date));
+    if (index >= windowStart && index <= nowIndex) {
+      perMonth[index - windowStart] += Number(item.amount);
+    }
+  }
+
+  const observedPace = median(perMonth);
+  // O plano declarado manda: é ele que torna a projeção estável.
+  const monthlyPace = plan ?? observedPace;
+  const paceSource: "plan" | "observed" = plan ? "plan" : "observed";
 
   if (monthlyPace <= 0) {
     const monthsToTarget = targetIndex === null ? null : Math.max(targetIndex - nowIndex, 0);
@@ -106,6 +144,7 @@ export function projectGoal(
     return {
       ...base,
       paceWindowMonths,
+      observedPace,
       monthlyPace: 0,
       status: targetIndex !== null && targetIndex < nowIndex ? "overdue" : "no-contributions",
       requiredMonthly: monthsToTarget ? remaining / monthsToTarget : null,
@@ -121,6 +160,8 @@ export function projectGoal(
       status: "no-target-date",
       paceWindowMonths,
       monthlyPace,
+      paceSource,
+      observedPace,
       monthsToFinish,
       finishMonth,
     };
@@ -133,6 +174,8 @@ export function projectGoal(
     remaining,
     paceWindowMonths,
     monthlyPace,
+    paceSource,
+    observedPace,
     monthsToFinish,
     finishMonth,
     targetMonth,

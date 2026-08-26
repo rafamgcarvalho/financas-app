@@ -23,6 +23,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
     title: "",
     description: "",
     targetValue: "" as any,
+    monthlyPlan: null,
     startDate: "",
     targetDate: "",
     type: "" as any,
@@ -43,6 +44,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
           title: initialData.title,
           description: initialData.description || "",
           targetValue: initialData.targetValue as any,
+          monthlyPlan: initialData.monthlyPlan ? Number(initialData.monthlyPlan) : null,
           startDate: formatDateForInput(initialData.startDate),
           targetDate: initialData.targetDate ? formatDateForInput(initialData.targetDate) : "",
           type: initialData.type,
@@ -81,6 +83,7 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
       const payload = {
         ...formData,
         targetValue: Number(formData.targetValue),
+        monthlyPlan: formData.monthlyPlan ? Number(formData.monthlyPlan) : null,
         startDate: new Date(`${formData.startDate}T12:00:00`).toISOString(),
         targetDate: formData.targetDate
           ? new Date(`${formData.targetDate}T12:00:00`).toISOString()
@@ -183,6 +186,24 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
                   setFormData((prev: any) => ({ ...prev, targetValue: digitsToNumber(digits) }))
                 }
               />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">
+                Aporte mensal planejado
+              </label>
+              <CurrencyInput
+                value={numberToDigits(formData.monthlyPlan ?? 0)}
+                onChange={(digits) =>
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    monthlyPlan: digits ? digitsToNumber(digits) : null,
+                  }))
+                }
+              />
+              <span className="text-[11px] text-gray-500">
+                Opcional. Serve de base para a projeção — sem ele, ela usa seu histórico.
+              </span>
             </div>
 
             <div className="flex flex-col gap-1">
