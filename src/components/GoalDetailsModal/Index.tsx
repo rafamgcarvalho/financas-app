@@ -369,6 +369,7 @@ export function GoalDetailsModal({
 
                 <GoalProjection
                   projection={projectGoal(currentGoal, contributions)}
+                  goal={currentGoal}
                   variant="full"
                 />
 

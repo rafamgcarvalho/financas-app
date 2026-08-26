@@ -157,3 +157,62 @@ export function groupByGoal(transactions: Transaction[]): Map<string, Transactio
 
   return byGoal;
 }
+
+/** Teto do cronograma, para uma meta muito longa não gerar centenas de linhas. */
+export const MAX_SCHEDULE_MONTHS = 120;
+
+export type ScheduleRow = {
+  month: number;
+  year: number;
+  contribution: number;
+  accumulated: number;
+  /** Percentual da meta ao fim daquele mês, de 0 a 100. */
+  percent: number;
+};
+
+export type Schedule = {
+  rows: ScheduleRow[];
+  monthly: number;
+  /** True quando o cronograma foi cortado no teto — nunca cortar em silêncio. */
+  truncated: boolean;
+};
+
+/**
+ * Cronograma mês a mês até concluir a meta.
+ *
+ * `mode` decide o ritmo: "pace" mantém o que a pessoa vem aportando, "target"
+ * usa o valor necessário para bater a data-alvo. O último aporte é ajustado
+ * para fechar exatamente no objetivo, em vez de ultrapassá-lo.
+ */
+export function buildSchedule(
+  projection: GoalProjection,
+  goal: { targetValue: number | string; currentValue: number | string },
+  mode: "pace" | "target",
+  now = new Date(),
+): Schedule | null {
+  const monthly = mode === "pace" ? projection.monthlyPace : projection.requiredMonthly;
+
+  if (!monthly || monthly <= 0 || projection.remaining <= 0) return null;
+
+  const target = Number(goal.targetValue) || 0;
+  let accumulated = Number(goal.currentValue) || 0;
+
+  const startIndex = now.getUTCFullYear() * 12 + now.getUTCMonth() + 1;
+  const rows: ScheduleRow[] = [];
+
+  while (accumulated < target && rows.length < MAX_SCHEDULE_MONTHS) {
+    // O último aporte fecha a conta certa: ninguém deposita mais do que falta.
+    const contribution = Math.min(monthly, target - accumulated);
+    accumulated += contribution;
+
+    const index = startIndex + rows.length;
+    rows.push({
+      ...fromIndex(index),
+      contribution,
+      accumulated,
+      percent: target > 0 ? (accumulated / target) * 100 : 0,
+    });
+  }
+
+  return { rows, monthly, truncated: accumulated < target };
+}
