@@ -6,7 +6,8 @@ import { ChevronDown, CreditCard, Loader2, Repeat, Wallet, Zap } from "lucide-re
 import { api } from "@/src/services/api";
 import { useCategories } from "@/src/hooks/useCategories";
 import { CategoryIcon } from "../CategoryIcon/Index";
-import { digitsToNumber, formatDigits, numberToDigits, toDigits } from "@/src/lib/money";
+import { CurrencyInput } from "../CurrencyInput/Index";
+import { digitsToNumber, numberToDigits } from "@/src/lib/money";
 import { inputDateToISO, isoToInputDate, todayInput, yesterdayInput } from "@/src/lib/dates";
 import { categoryForTitle, getSuggestions, rememberEntry, type RecentEntry } from "@/src/lib/recentEntries";
 import { formatCurrency } from "@/src/utils/formatCurrency";
@@ -331,25 +332,15 @@ export function TransactionForm({
           <label htmlFor="amount" className="mb-1.5 block text-sm font-medium text-slate-600">
             {repetition === "installments" ? "Valor total" : "Valor"}
           </label>
-          <div
-            className={`flex items-center gap-2 rounded-2xl border-2 bg-white px-4 py-3 transition ${
-              errors.amountDigits
-                ? "border-expense-500"
-                : "border-slate-200 focus-within:border-brand-400"
-            }`}
-          >
-            <span className="text-xl font-semibold text-slate-400">R$</span>
-            <input
-              id="amount"
-              ref={amountRef}
-              inputMode="decimal"
-              autoComplete="off"
-              value={formatDigits(form.amountDigits)}
-              onChange={(e) => update("amountDigits", toDigits(e.target.value))}
-              placeholder="0,00"
-              className={`w-full bg-transparent text-3xl font-bold tracking-tight outline-none placeholder:text-slate-300 ${theme.text}`}
-            />
-          </div>
+          <CurrencyInput
+            id="amount"
+            ref={amountRef}
+            size="lg"
+            value={form.amountDigits}
+            onChange={(digits) => update("amountDigits", digits)}
+            invalid={Boolean(errors.amountDigits)}
+            className={theme.text}
+          />
           {errors.amountDigits && <p className="mt-1 text-xs text-expense-600">{errors.amountDigits}</p>}
         </section>
 

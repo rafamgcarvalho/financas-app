@@ -5,6 +5,8 @@ import { useState } from "react";
 import { X, DollarSign, Calendar, TextQuote, Tag } from "lucide-react";
 import { api } from "@/src/services/api";
 import { toast } from "react-toastify";
+import { CurrencyInput } from "../CurrencyInput/Index";
+import { digitsToNumber, numberToDigits } from "@/src/lib/money";
 
 interface CreateInvestmentModalProps {
   goalId: string;
@@ -117,20 +119,10 @@ export function CreateInvestmentModal({
                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1 tracking-wider">
                   Valor
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">
-                    R$
-                  </span>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-400/30 focus:bg-white transition-all font-bold text-gray-900 text-base"
-                    placeholder="0,00"
-                  />
-                </div>
+                <CurrencyInput
+                  value={numberToDigits(amount)}
+                  onChange={(digits) => setAmount(String(digitsToNumber(digits)))}
+                />
               </div>
 
               {/* Data */}

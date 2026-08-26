@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Modal } from "../Modal/Index";
 import { CategoryPill } from "../CategoryPill/Index";
+import { CurrencyInput } from "../CurrencyInput/Index";
 import { setBudget, type BudgetMap } from "@/src/lib/budgets";
 import { useCategories } from "@/src/hooks/useCategories";
-import { digitsToNumber, formatDigits, numberToDigits, toDigits } from "@/src/lib/money";
+import { digitsToNumber, numberToDigits } from "@/src/lib/money";
 import { formatCurrency } from "@/src/utils/formatCurrency";
 
 type BudgetEditorProps = {
@@ -72,18 +73,14 @@ function BudgetEditorForm({
                 )}
               </div>
 
-              <div className="flex w-36 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 focus-within:border-brand-400">
-                <span className="text-xs font-medium text-slate-400">R$</span>
-                <input
-                  inputMode="decimal"
-                  value={formatDigits(drafts[category.value] ?? "")}
-                  onChange={(e) =>
-                    setDrafts((prev) => ({ ...prev, [category.value]: toDigits(e.target.value) }))
-                  }
-                  placeholder="0,00"
-                  className="w-full bg-transparent text-right text-sm font-semibold text-navy-800 outline-none placeholder:font-normal placeholder:text-slate-300"
-                />
-              </div>
+              <CurrencyInput
+                size="sm"
+                className="w-36 shrink-0"
+                value={drafts[category.value] ?? ""}
+                onChange={(digits) =>
+                  setDrafts((prev) => ({ ...prev, [category.value]: digits }))
+                }
+              />
             </div>
           );
         })}

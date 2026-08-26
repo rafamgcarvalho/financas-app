@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import { Container } from "../Container/Index";
 import { SpinLoader } from "../SpinLoader/Index";
 import { api } from "@/src/services/api";
+import { CurrencyInput } from "../CurrencyInput/Index";
+import { digitsToNumber, numberToDigits } from "@/src/lib/money";
 
 type CreateGoalModalProps = {
   onClose: () => void;
@@ -175,15 +177,11 @@ export function CreateGoalModal({ onClose, onSuccess, initialData }: CreateGoalM
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Valor total</label>
-              <input
-                type="number"
-                name="targetValue"
-                required
-                step="0.01"
-                value={formData.targetValue}
-                onChange={handleChange}
-                placeholder="0,00"
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              <CurrencyInput
+                value={numberToDigits(formData.targetValue)}
+                onChange={(digits) =>
+                  setFormData((prev: any) => ({ ...prev, targetValue: digitsToNumber(digits) }))
+                }
               />
             </div>
 
