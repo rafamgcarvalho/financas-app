@@ -6,15 +6,21 @@ import { formatCurrency } from "@/src/utils/formatCurrency";
 import { formatMonthLabel } from "@/src/lib/dates";
 import {
   buildSchedule,
+  buildScenarios,
   MAX_SCHEDULE_MONTHS,
   type GoalProjection as Projection,
+  type ScenarioKey,
 } from "@/src/lib/goalProjection";
 
 type GoalProjectionProps = {
   projection: Projection;
   variant?: "compact" | "full";
   /** Necessário para montar o cronograma mês a mês. */
-  goal?: { targetValue: number | string; currentValue: number | string };
+  goal?: {
+    targetValue: number | string;
+    currentValue: number | string;
+    monthlyPlan?: number | string | null;
+  };
 };
 
 function monthLabel(period: { month: number; year: number } | null): string {
@@ -60,15 +66,20 @@ const TONES = {
 export function GoalProjection({ projection, variant = "compact", goal }: GoalProjectionProps) {
   const { text, tone } = summary(projection);
   const [openSchedule, setOpenSchedule] = useState(false);
-  // "target" só existe quando há data-alvo; senão o único plano possível é o ritmo.
-  const [mode, setMode] = useState<"pace" | "target">("target");
+  const [mode, setMode] = useState<ScenarioKey | null>(null);
 
-  const canTarget = projection.requiredMonthly !== null && projection.targetMonth !== null;
-  const effectiveMode = canTarget ? mode : "pace";
+  const scenarios = useMemo(
+    () => (goal ? buildScenarios(projection, goal) : []),
+    [goal, projection],
+  );
+
+  // Sem escolha explícita, abre no cenário mais exigente — é o que responde
+  // "e se eu quiser chegar no prazo?".
+  const selected = scenarios.find((item) => item.key === mode) ?? scenarios[0] ?? null;
 
   const schedule = useMemo(
-    () => (goal ? buildSchedule(projection, goal, effectiveMode) : null),
-    [goal, projection, effectiveMode],
+    () => (goal && selected ? buildSchedule(goal, selected.monthly) : null),
+    [goal, selected],
   );
 
   if (variant === "compact") {
@@ -208,41 +219,71 @@ export function GoalProjection({ projection, variant = "compact", goal }: GoalPr
 
               {openSchedule && (
                 <div className="mt-3">
-                  {canTarget && (
-                    <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
-                      {(
-                        [
-                          { key: "target", label: "Para bater o alvo" },
-                          {
-                            key: "pace",
-                            label: projection.paceSource === "plan" ? "No plano" : "No ritmo atual",
-                          },
-                        ] as const
-                      ).map((option) => (
-                        <button
-                          key={option.key}
-                          type="button"
-                          onClick={() => setMode(option.key)}
-                          className={`rounded-md px-2 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
-                            effectiveMode === option.key
-                              ? "bg-white text-navy-800 shadow-sm"
-                              : "text-slate-500 hover:text-slate-700"
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
+                  {/* Os caminhos lado a lado: é a comparação que dá a dimensão
+                      da diferença entre o prazo, a intenção e a prática. */}
+                  {scenarios.length > 1 && (
+                    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-slate-50 uppercase tracking-wide text-slate-500">
+                          <tr>
+                            <th className="px-3 py-2 font-semibold">Cenário</th>
+                            <th className="px-3 py-2 text-right font-semibold">Aporte/mês</th>
+                            <th className="px-3 py-2 text-right font-semibold">Conclui</th>
+                            <th className="px-3 py-2 text-right font-semibold">vs. alvo</th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-slate-100">
+                          {scenarios.map((scenario) => {
+                            const active = selected?.key === scenario.key;
+                            const atraso = scenario.monthsOffTarget;
+
+                            return (
+                              <tr
+                                key={scenario.key}
+                                onClick={() => setMode(scenario.key)}
+                                className={`cursor-pointer transition ${
+                                  active ? "bg-navy-50" : "hover:bg-slate-50"
+                                }`}
+                              >
+                                <td
+                                  className={`px-3 py-2 ${active ? "font-semibold text-navy-800" : "text-slate-600"}`}
+                                >
+                                  {scenario.label}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums text-slate-700">
+                                  {formatCurrency(scenario.monthly)}
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-600">
+                                  {monthLabel(scenario.finishMonth)}
+                                </td>
+                                <td
+                                  className={`px-3 py-2 text-right tabular-nums font-medium ${
+                                    atraso === null
+                                      ? "text-slate-400"
+                                      : atraso > 0
+                                        ? "text-amber-600"
+                                        : "text-income-600"
+                                  }`}
+                                >
+                                  {atraso === null
+                                    ? "—"
+                                    : atraso > 0
+                                      ? `+${atraso} ${atraso === 1 ? "mês" : "meses"}`
+                                      : "no prazo"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   )}
 
                   <p className="mb-2 text-[11px] text-slate-500">
                     {schedule.rows.length} {schedule.rows.length === 1 ? "aporte" : "aportes"} de{" "}
                     <strong className="text-navy-800">{formatCurrency(schedule.monthly)}</strong>
-                    {effectiveMode === "target"
-                      ? " para chegar na data-alvo"
-                      : projection.paceSource === "plan"
-                        ? " mantendo o plano"
-                        : " mantendo o ritmo atual"}
+                    {selected ? ` · ${selected.label.toLowerCase()}` : ""}
                   </p>
 
                   <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200">

@@ -220,25 +220,81 @@ export type Schedule = {
   truncated: boolean;
 };
 
+export type ScenarioKey = "target" | "plan" | "observed";
+
+export type Scenario = {
+  key: ScenarioKey;
+  label: string;
+  monthly: number;
+  monthsToFinish: number;
+  finishMonth: { month: number; year: number };
+  /** Positivo = conclui depois do alvo. Null quando a meta não tem data-alvo. */
+  monthsOffTarget: number | null;
+};
+
 /**
- * Cronograma mês a mês até concluir a meta.
+ * Os caminhos possíveis até a meta, para comparar lado a lado.
  *
- * `mode` decide o ritmo: "pace" mantém o que a pessoa vem aportando, "target"
- * usa o valor necessário para bater a data-alvo. O último aporte é ajustado
- * para fechar exatamente no objetivo, em vez de ultrapassá-lo.
+ * São três leituras diferentes da mesma meta: o que o prazo exige, o que a
+ * pessoa se propôs a fazer, e o que ela vem fazendo de fato. Ver os três juntos
+ * é o que mostra o tamanho da diferença entre intenção e prática.
+ */
+export function buildScenarios(
+  projection: GoalProjection,
+  goal: { targetValue: number | string; currentValue: number | string; monthlyPlan?: number | string | null },
+  now = new Date(),
+): Scenario[] {
+  if (projection.remaining <= 0) return [];
+
+  const nowIndex = now.getUTCFullYear() * 12 + now.getUTCMonth();
+  const targetIndex =
+    projection.targetMonth === null
+      ? null
+      : projection.targetMonth.year * 12 + (projection.targetMonth.month - 1);
+
+  const describe = (key: ScenarioKey, label: string, monthly: number | null): Scenario | null => {
+    if (!monthly || monthly <= 0) return null;
+
+    const monthsToFinish = Math.ceil(projection.remaining / monthly);
+
+    return {
+      key,
+      label,
+      monthly,
+      monthsToFinish,
+      finishMonth: fromIndex(nowIndex + monthsToFinish),
+      monthsOffTarget: targetIndex === null ? null : monthsToFinish - (targetIndex - nowIndex),
+    };
+  };
+
+  const plan = Number(goal.monthlyPlan) || null;
+
+  const scenarios = [
+    describe("target", "Para bater o alvo", projection.requiredMonthly),
+    describe("plan", "No plano", plan),
+    // Sem plano declarado, o ritmo observado já é a projeção principal — não
+    // faz sentido repeti-lo como se fosse um cenário alternativo.
+    plan ? describe("observed", "No ritmo atual", projection.observedPace) : null,
+  ];
+
+  return scenarios.filter((scenario): scenario is Scenario => scenario !== null);
+}
+
+/**
+ * Cronograma mês a mês até concluir a meta, com um aporte mensal fixo.
+ *
+ * O último aporte é ajustado para fechar exatamente no objetivo, em vez de
+ * ultrapassá-lo.
  */
 export function buildSchedule(
-  projection: GoalProjection,
   goal: { targetValue: number | string; currentValue: number | string },
-  mode: "pace" | "target",
+  monthly: number,
   now = new Date(),
 ): Schedule | null {
-  const monthly = mode === "pace" ? projection.monthlyPace : projection.requiredMonthly;
-
-  if (!monthly || monthly <= 0 || projection.remaining <= 0) return null;
-
   const target = Number(goal.targetValue) || 0;
   let accumulated = Number(goal.currentValue) || 0;
+
+  if (!monthly || monthly <= 0 || accumulated >= target) return null;
 
   const startIndex = now.getUTCFullYear() * 12 + now.getUTCMonth() + 1;
   const rows: ScheduleRow[] = [];
